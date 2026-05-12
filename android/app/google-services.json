@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "46130881422",
+    "project_id": "mindspace-project-9713d",
+    "storage_bucket": "mindspace-project-9713d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46130881422:android:6f5844c33ddeedd0b67adf",
+        "android_client_info": {
+          "package_name": "com.example.mind_space"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "46130881422-5e582g294etd824pc7frdqm8srjdshbc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzjF0qE_NHTmgBaQKkwBSMOxgoFRQtduw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "46130881422-5e582g294etd824pc7frdqm8srjdshbc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
