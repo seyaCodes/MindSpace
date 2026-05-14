@@ -8,12 +8,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^8.0.0
+  google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
   font_awesome_flutter: ^10.9.1
-  flutter_test:
-    sdk: flutter
-  firebase_core: ^4.7.0
 
 flutter:
   uses-material-design: true
