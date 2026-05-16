@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../features/auth/auth_provider.dart';
+import 'auth_provider.dart';
 
 const _bg = Color(0xFF0A0E1A);
 const _card = Color(0xFF141830);
 const _border = Color(0xFF2A2D4A);
-const _accent = Color(0xFF5C58ED);
-const _teal = Color(0xFF3FA9F5);
+const _accent = Color(0xFF6C72FF);
+const _cyan = Color(0xFF4DD9C0);
 const _textSec = Color(0xFFB0B4C8);
 const _textMuted = Color(0xFF6B6F8A);
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class AuthScreen extends ConsumerStatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailCtrl = TextEditingController();
 
   @override
@@ -66,6 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: 16),
 
+                // Brand mark
                 Row(
                   children: [
                     Container(
@@ -73,41 +74,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       height: 28,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient:
-                            RadialGradient(colors: [Color(0xFF9D97FF), _accent]),
+                        gradient: RadialGradient(
+                          colors: [Color(0xFF9D97FF), _accent],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text('Mind Space',
-                        style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      'Mind Space',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 52),
 
-                Text('Welcome',
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 44,
-                        fontWeight: FontWeight.w700,
-                        height: 1.05)),
-                Text('back.',
-                    style: GoogleFonts.inter(
-                        color: _teal,
-                        fontSize: 44,
-                        fontWeight: FontWeight.w700,
-                        fontStyle: FontStyle.italic,
-                        height: 1.05)),
+                Text(
+                  'Welcome',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w700,
+                    height: 1.05,
+                  ),
+                ),
+                Text(
+                  'back.',
+                  style: GoogleFonts.inter(
+                    color: _cyan,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.italic,
+                    height: 1.05,
+                  ),
+                ),
 
                 const SizedBox(height: 16),
 
                 Text(
                   'Sign in to pick up where you left off. No passwords — your inbox does the work.',
                   style: GoogleFonts.inter(
-                      color: _textSec, fontSize: 15, height: 1.5),
+                    color: _textSec,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
                 ),
 
                 const SizedBox(height: 36),
@@ -130,15 +144,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     onChanged: (_) {
                       if (auth.emailError != null) {
-                        ref.read(authNotifierProvider.notifier).clearError();
+                        ref
+                            .read(authNotifierProvider.notifier)
+                            .clearError();
                       }
                     },
-                    style:
-                        GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                    style: GoogleFonts.inter(
+                        color: Colors.white, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'you@example.com',
-                      hintStyle:
-                          GoogleFonts.inter(color: _textMuted, fontSize: 15),
+                      hintStyle: GoogleFonts.inter(
+                          color: _textMuted, fontSize: 15),
                       prefixIcon: Icon(Icons.mail_outline,
                           color: _textMuted, size: 20),
                       border: InputBorder.none,
@@ -154,12 +170,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.only(left: 16),
                     child: Text(auth.emailError!,
                         style: GoogleFonts.inter(
-                            color: const Color(0xFFE74C3C), fontSize: 12)),
+                            color: const Color(0xFFE74C3C),
+                            fontSize: 12)),
                   ),
                 ],
 
                 const SizedBox(height: 14),
 
+                // Send magic link button
                 GestureDetector(
                   onTap: auth.isLoading ? null : _onSendMagicLink,
                   child: Container(
@@ -167,9 +185,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     height: 56,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [_accent, _teal],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight),
+                        colors: [_accent, _cyan],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                       borderRadius: BorderRadius.circular(28),
                     ),
                     alignment: Alignment.center,
@@ -179,23 +198,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2))
-                        : Text('Send magic link →',
-                            style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600)),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Send magic link',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  )),
+                              const SizedBox(width: 8),
+                              const Text('→',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 16)),
+                            ],
+                          ),
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
+                // OR divider
                 Row(
                   children: [
                     const Expanded(
                         child: Divider(color: _border, thickness: 0.5)),
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text('OR',
                           style: GoogleFonts.inter(
                               color: _textMuted,
@@ -209,6 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
 
+                // Continue with Google
                 GestureDetector(
                   onTap: _onGoogleSignIn,
                   child: Container(
@@ -222,11 +252,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('G',
-                            style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700)),
+                        Container(
+                          width: 22,
+                          height: 22,
+                          alignment: Alignment.center,
+                          child: Text('G',
+                              style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700)),
+                        ),
                         const SizedBox(width: 10),
                         Text('Continue with Google',
                             style: GoogleFonts.inter(
@@ -247,20 +282,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.inter(
                           color: _textMuted, fontSize: 11, height: 1.6),
                       children: [
-                        const TextSpan(
-                            text: 'By continuing you agree to our '),
+                        const TextSpan(text: 'By continuing you agree to our '),
                         TextSpan(
-                            text: 'Terms',
-                            style: GoogleFonts.inter(
-                                color: _teal, fontSize: 11)),
+                          text: 'Terms',
+                          style: GoogleFonts.inter(
+                              color: _cyan, fontSize: 11),
+                        ),
                         const TextSpan(text: ' and '),
                         TextSpan(
-                            text: 'Privacy',
-                            style: GoogleFonts.inter(
-                                color: _teal, fontSize: 11)),
+                          text: 'Privacy',
+                          style: GoogleFonts.inter(
+                              color: _cyan, fontSize: 11),
+                        ),
                         const TextSpan(
-                            text:
-                                '.\nSage is a reflection tool, not a substitute for professional care.'),
+                          text:
+                              '.\nSage is a reflection tool, not a substitute for professional care.',
+                        ),
                       ],
                     ),
                   ),
