@@ -1,31 +1,66 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app/theme.dart';
 import 'history_provider.dart';
 import 'widgets/arc_grid_tile.dart';
 
-class ArcsTab extends ConsumerWidget {
+class ArcsTab extends ConsumerStatefulWidget {
   const ArcsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ArcsTab> createState() => _ArcsTabState();
+}
+
+class _ArcsTabState extends ConsumerState<ArcsTab> {
+  bool _showEmotionLegend = false;
+  Timer? _legendTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkEmotionLegend();
+  }
+
+  @override
+  void dispose() {
+    _legendTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkEmotionLegend() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool('emotion_dots_legend_seen') ?? false;
+    if (!seen && mounted) {
+      setState(() => _showEmotionLegend = true);
+      _legendTimer = Timer(const Duration(seconds: 3), () async {
+        if (mounted) setState(() => _showEmotionLegend = false);
+        await prefs.setBool('emotion_dots_legend_seen', true);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final archivedExpanded = ref.watch(historyProvider).archivedExpanded;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
       children: [
-        // ACTIVE THREADS header
+        // Header
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'ACTIVE THREADS',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 12,
+              style: GoogleFonts.inter(
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF9B9BA0),
+                color: AppColors.textTertiary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -35,21 +70,21 @@ class ArcsTab extends ConsumerWidget {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFFF5F5F7),
+                color: AppColors.textPrimary,
               ),
             ),
           ],
         ),
         const SizedBox(height: 24),
 
-        // 2-col arc grid — uses assets/<color>.png (no subfolder)
+        // 2-col arc grid
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          mainAxisSpacing: 28,
+          mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 0.72,
+          childAspectRatio: 0.85,
           children: [
             ArcGridTile(
               folderAsset: 'assets/purple.png',
@@ -99,31 +134,43 @@ class ArcsTab extends ConsumerWidget {
             ),
           ],
         ),
+
+        // Emotion dot legend — one-time, 3-second tooltip
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          child: _showEmotionLegend
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _EmotionDotLegend(),
+                )
+              : const SizedBox.shrink(),
+        ),
+
         const SizedBox(height: 24),
 
         // Archived divider
         GestureDetector(
-          onTap: () =>
-              ref.read(historyProvider.notifier).toggleArchived(),
+          onTap: () => ref.read(historyProvider.notifier).toggleArchived(),
           behavior: HitTestBehavior.opaque,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
                 const SizedBox(width: 12),
                 const Icon(Icons.archive_outlined,
-                    color: Color(0xFF9B9BA0), size: 16),
+                    color: AppColors.textTertiary, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'ARCHIVED CHAPTERS · 2',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF9B9BA0),
+                    color: AppColors.textTertiary,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -132,7 +179,7 @@ class ArcsTab extends ConsumerWidget {
                   archivedExpanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  color: const Color(0xFF9B9BA0),
+                  color: AppColors.textTertiary,
                 ),
                 const SizedBox(width: 12),
               ],
@@ -151,9 +198,9 @@ class ArcsTab extends ConsumerWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 2,
-                    mainAxisSpacing: 28,
+                    mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    childAspectRatio: 0.72,
+                    childAspectRatio: 0.85,
                     children: [
                       ArcGridTile(
                         folderAsset: 'assets/teal.png',
@@ -177,4 +224,49 @@ class ArcsTab extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _EmotionDotLegend extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              _dot(AppColors.accentPurple),
+              _dot(AppColors.accentOrange),
+              _dot(AppColors.accentGreen),
+              _dot(AppColors.accentBlue),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Each dot is a session\'s dominant emotion — purple anxious, orange frustrated, green calm, blue sad.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dot(Color c) => Container(
+        width: 8,
+        height: 8,
+        margin: const EdgeInsets.only(right: 4),
+        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+      );
 }

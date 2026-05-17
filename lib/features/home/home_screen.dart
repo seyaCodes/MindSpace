@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -26,11 +29,11 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            padding: const EdgeInsets.fromLTRB(20, 11, 20, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Date label ──────────────────────────────
+                // ── Date label ──────────────────────────────────
                 Text(
                   'FRIDAY, APRIL 24',
                   style: GoogleFonts.jetBrainsMono(
@@ -43,7 +46,7 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // ── Greeting "Morning," / "Seya." ───────────
+                // ── Greeting ─────────────────────────────────────
                 Text(
                   'Morning,',
                   style: GoogleFonts.inter(
@@ -72,7 +75,7 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // ── Subtitle ────────────────────────────────
+                // ── Subtitle ──────────────────────────────────────
                 Text(
                   'Pick up where you left off, or start fresh.',
                   style: GoogleFonts.inter(
@@ -82,9 +85,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
 
-                // ── "Open threads" / "view all >" ───────────
+                // ── "Open threads" / "view all >" ────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -112,12 +115,12 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // ── 2×2 grid of arc cards + new thread ──────
+                // ── 2×2 floating folder grid ──────────────────────
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
-                  mainAxisSpacing: 24,
+                  mainAxisSpacing: 20,
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.85,
                   children: [
@@ -125,6 +128,7 @@ class HomeScreen extends StatelessWidget {
                       folderAsset: 'assets/purple.png',
                       name: 'The Job Hunt',
                       subtitle: '2d ago',
+                      ambientBreath: true,
                       onTap: () => context.push('/arc/1'),
                     ),
                     _ArcCard(
@@ -154,12 +158,15 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ARC CARD — folder PNG with name + date below
+// ARC CARD — folder floats on background, label below
+// Press: scale(0.97) 100ms ease-out
+// Optional: ambient 3s breath on the folder illustration
 // ═══════════════════════════════════════════════════════════
-class _ArcCard extends StatelessWidget {
+class _ArcCard extends StatefulWidget {
   final String folderAsset;
   final String name;
   final String subtitle;
+  final bool ambientBreath;
   final VoidCallback onTap;
 
   const _ArcCard({
@@ -167,154 +174,171 @@ class _ArcCard extends StatelessWidget {
     required this.name,
     required this.subtitle,
     required this.onTap,
+    this.ambientBreath = false,
   });
+
+  @override
+  State<_ArcCard> createState() => _ArcCardState();
+}
+
+class _ArcCardState extends State<_ArcCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 100),
+    reverseDuration: const Duration(milliseconds: 150),
+  );
+  late final Animation<double> _scale = Tween<double>(begin: 1.0, end: 0.97)
+      .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Widget _folderImage() {
+    final img = ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 115),
+      child: Image.asset(
+        widget.folderAsset,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+      ),
+    );
+    if (!widget.ambientBreath) return img;
+    return img
+        .animate(onPlay: (ctrl) => ctrl.repeat(reverse: true))
+        .scale(
+          begin: const Offset(0.97, 0.97),
+          end: const Offset(1.0, 1.0),
+          duration: const Duration(seconds: 3),
+          curve: Curves.easeInOut,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Center(
-              child: Image.asset(
-                folderAsset,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Center(child: _folderImage()),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.name,
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFF5F5F7),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFF5F5F7),
+            const SizedBox(height: 4),
+            Text(
+              widget.subtitle,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF9B9BA0),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF9B9BA0),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEW THREAD CARD — dashed circle with + and "New Thread"
+// NEW THREAD CARD — floating + icon and label, no container
+// Same press animation as arc cards
 // ═══════════════════════════════════════════════════════════
-class _NewThreadCard extends StatelessWidget {
+class _NewThreadCard extends StatefulWidget {
   final VoidCallback onTap;
   const _NewThreadCard({required this.onTap});
 
   @override
+  State<_NewThreadCard> createState() => _NewThreadCardState();
+}
+
+class _NewThreadCardState extends State<_NewThreadCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 100),
+    reverseDuration: const Duration(milliseconds: 150),
+  );
+  late final Animation<double> _scale = Tween<double>(begin: 1.0, end: 0.97)
+      .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Center(
-              child: CustomPaint(
-                painter: _DashedCirclePainter(
-                  color: const Color(0xFF9B9BA0).withOpacity(0.5),
-                  strokeWidth: 1.5,
-                  gap: 6,
-                  dashLength: 4,
-                ),
-                child: const SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: Center(
-                    child: Icon(
-                      Icons.add,
-                      color: Color(0xFFB8B8C0),
-                      size: 36,
-                    ),
-                  ),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Center(
+                child: Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.accentPurple.withOpacity(0.7),
+                  size: 52,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // empty space matching arc card name height
-          const SizedBox(height: 22),
-          Text(
-            'New Thread',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF9B9BA0),
+            const SizedBox(height: 12),
+            Text(
+              'New thread',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFF5F5F7),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              'start fresh',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF9B9BA0),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════════
-// DASHED CIRCLE PAINTER — for the "New Thread" card
-// ═══════════════════════════════════════════════════════════
-class _DashedCirclePainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double gap;
-  final double dashLength;
-
-  _DashedCirclePainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.gap,
-    required this.dashLength,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final radius = (size.width < size.height ? size.width : size.height) / 2;
-    final center = Offset(size.width / 2, size.height / 2);
-    final circumference = 2 * 3.141592653589793 * radius;
-    final dashCount = (circumference / (dashLength + gap)).floor();
-    final adjustedGap =
-        (circumference - (dashCount * dashLength)) / dashCount;
-    final dashAngle = dashLength / radius;
-    final gapAngle = adjustedGap / radius;
-
-    double currentAngle = -3.141592653589793 / 2;
-    for (int i = 0; i < dashCount; i++) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        currentAngle,
-        dashAngle,
-        false,
-        paint,
-      );
-      currentAngle += dashAngle + gapAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedCirclePainter oldDelegate) =>
-      oldDelegate.color != color ||
-      oldDelegate.strokeWidth != strokeWidth ||
-      oldDelegate.gap != gap ||
-      oldDelegate.dashLength != dashLength;
 }

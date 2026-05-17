@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
+import '../../core/widgets/pressable_scale.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -37,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         Text('Profile',
                             style: GoogleFonts.inter(
-                                color: AppColors.textPrimary, fontSize: 36,
+                                color: AppColors.textPrimary, fontSize: 28,
                                 fontWeight: FontWeight.w700)),
                         const SizedBox(height: 4),
                         Text('Tune your space and your boundaries.',
@@ -271,6 +272,7 @@ class _SettingsRow extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final bool destructive;
+  final VoidCallback? onTap;
 
   const _SettingsRow({
     required this.icon,
@@ -278,48 +280,52 @@ class _SettingsRow extends StatelessWidget {
     required this.subtitle,
     required this.trailing,
     this.destructive = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(
-              color: destructive
-                  ? AppColors.accentRed.withOpacity(0.12)
-                  : AppColors.bgElevated,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+    return PressableScale(
+      onTap: onTap ?? () {},
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: destructive
+                    ? AppColors.accentRed.withOpacity(0.12)
+                    : AppColors.bgElevated,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(icon,
+                  size: 16,
+                  color: destructive ? AppColors.accentRed : AppColors.textSecondary),
             ),
-            child: Icon(icon,
-                size: 16,
-                color: destructive ? AppColors.accentRed : AppColors.textSecondary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: GoogleFonts.inter(
-                        color: destructive
-                            ? AppColors.accentRed
-                            : AppColors.textPrimary,
-                        fontSize: 14, fontWeight: FontWeight.w500)),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle!,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
                       style: GoogleFonts.inter(
-                          color: AppColors.textTertiary, fontSize: 12)),
+                          color: destructive
+                              ? AppColors.accentRed
+                              : AppColors.textPrimary,
+                          fontSize: 14, fontWeight: FontWeight.w500)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        style: GoogleFonts.inter(
+                            color: AppColors.textTertiary, fontSize: 12)),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          if (trailing != null) trailing!,
-        ],
+            if (trailing != null) trailing!,
+          ],
+        ),
       ),
     );
   }
