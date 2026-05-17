@@ -39,7 +39,7 @@ class AnalysisScreen extends StatelessWidget {
                       children: [
                         Text('Analysis',
                             style: GoogleFonts.inter(
-                                color: AppColors.textPrimary, fontSize: 36,
+                                color: AppColors.textPrimary, fontSize: 28,
                                 fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                         const SizedBox(height: 4),
                         Text('Patterns across all of your arcs.',

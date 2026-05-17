@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme.dart';
 import '../../core/constants/quick_replies.dart';
+import '../../core/widgets/pressable_scale.dart';
 
 // ── Mock messages ─────────────────────────────────────────────────────────────
 class _Msg {
@@ -67,6 +69,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
+    HapticFeedback.lightImpact();
     ref.read(_messagesProvider(widget.arcId).notifier).update((msgs) => [
           ...msgs,
           _Msg(isUser: true, text: text.trim(), time: '9:05 PM'),
@@ -421,7 +424,7 @@ class _QuickReplies extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 16),
       child: Wrap(
         spacing: 8, runSpacing: 8,
-        children: kQuickReplies.map((q) => GestureDetector(
+        children: kQuickReplies.map((q) => PressableScale(
           onTap: () => onTap(q),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
