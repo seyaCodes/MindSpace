@@ -1,0 +1,3 @@
+class ArcsRepo {
+  const ArcsRepo();
+}

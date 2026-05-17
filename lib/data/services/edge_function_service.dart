@@ -1,0 +1,3 @@
+class EdgeFunctionService {
+  const EdgeFunctionService();
+}
