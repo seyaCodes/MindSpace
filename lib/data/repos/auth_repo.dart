@@ -1,0 +1,3 @@
+class AuthRepo {
+  const AuthRepo();
+}
