@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'auth_provider.dart';
+import '../../app/router.dart';
 
 const _bg = Color(0xFF0A0E1A);
 const _card = Color(0xFF141830);
@@ -38,11 +39,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _onGoogleSignIn() async {
-    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    if (!mounted) return;
-    final s = ref.read(authNotifierProvider);
-    if (!s.isLoading && s.emailError == null) context.go('/home');
+  await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+  if (!mounted) return;
+  final s = ref.read(authNotifierProvider);
+  if (!s.isLoading && s.emailError == null) {
+    ref.read(authStateProvider.notifier).state = true;
+    context.go('/');
   }
+}
 
   @override
   Widget build(BuildContext context) {

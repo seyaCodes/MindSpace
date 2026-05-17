@@ -1,0 +1,3 @@
+class InsightsRepo {
+  const InsightsRepo();
+}
