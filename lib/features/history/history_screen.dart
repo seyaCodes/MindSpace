@@ -77,7 +77,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     Text(
                       'History',
                       style: GoogleFonts.inter(
-                        fontSize: 56,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFFF5F5F7),
                         height: 1.0,
