@@ -13,9 +13,6 @@
 [![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square)](https://groq.com)
 [![Platform](https://img.shields.io/badge/Android-API_24+-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
 
-<br />
-
-![MindSpace preview](assets/preview.png)
 
 </div>
 
