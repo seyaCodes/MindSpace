@@ -43,8 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Environment variables â€” NEVER commit
-.env
-# Environment variables — NEVER commit
-.env
