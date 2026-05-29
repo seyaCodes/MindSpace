@@ -1,24 +1,20 @@
 name: mind_space
-description: MindSpace – Your reflection companion
+description: A quiet place for what's loud.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  # locked dependency list — do not add anything outside this list
-  flutter_riverpod: ^2.5.1
-  go_router: ^13.2.0
-  flutter_animate: ^4.5.0
-  google_fonts: ^6.2.1
-  fl_chart: ^0.68.0
-  http: ^1.2.1
-  shared_preferences: ^2.2.3
-  flutter_dotenv: ^5.1.0
-  flutter_slidable: ^3.1.0   # kept — CLAUDE.md requires swipe actions
   supabase_flutter: ^2.5.0
+  flutter_riverpod: ^2.5.0
+  go_router: ^13.0.0
+  flutter_dotenv: ^5.0.0
+  shared_preferences: ^2.0.0
+  google_fonts: ^6.0.0
+  app_links: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -29,4 +25,9 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/
+    - assets/pink.png
+    - assets/blue.png
+    - assets/green.png
+    - assets/teal.png
+    - assets/orange.png
+    - assets/purple.png

@@ -1,3 +1,0 @@
-class ChatsRepo {
-  const ChatsRepo();
-}

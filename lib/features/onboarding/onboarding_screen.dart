@@ -1,150 +1,158 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../app/theme.dart';
-import '../../app/router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class OnboardingScreen extends ConsumerStatefulWidget {
+import '../../core/router/app_router.dart';
+import 'package:mind_space/shared/widgets/app_background.dart';
+import 'package:mind_space/shared/widgets/cta_button.dart';
+import '../../data/repositories/profile_repository.dart';
+import 'widgets/onboarding_page_one.dart';
+import 'widgets/onboarding_page_two.dart';
+import 'widgets/onboarding_page_three.dart';
+
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  int _page = 0;
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  bool _loading = false;
 
-  static const _pages = [
-    _OnboardingPage(
-      title: 'A quiet space\nfor your thoughts.',
-      subtitle: 'MindSpace is where you talk to Sage — an AI that listens without judging, and reflects without advising.',
-      emoji: '✦',
-    ),
-    _OnboardingPage(
-      title: 'Sessions become\nstories over time.',
-      subtitle: 'After a few conversations, Sage starts noticing patterns. These become Arcs — the chapters of your inner life.',
-      emoji: '◎',
-    ),
-    _OnboardingPage(
-      title: 'Your reflections,\nalways yours.',
-      subtitle: 'Nothing leaves this app without your permission. This is your private space.',
-      emoji: '⬡',
-    ),
-  ];
+  Future<void> _onContinue() async {
+    if (_loading) return;
 
-  void _next() {
-    if (_page < _pages.length - 1) {
-      setState(() => _page++);
+    if (_currentPage < 2) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeInOut,
+      );
     } else {
-      ref.read(onboardingCompleteProvider.notifier).state = true;
-      context.go('/auth');
+      await _finish();
     }
+  }
+
+  Future<void> _onSkip() async {
+    if (_loading) return;
+    await _finish();
+  }
+
+  Future<void> _finish() async {
+    setState(() => _loading = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setBool('onboarding_seen', true);
+
+      final userId =
+          Supabase.instance.client.auth.currentUser?.id;
+
+      if (userId != null) {
+        await ProfileRepository(
+          Supabase.instance.client,
+        ).markOnboardingComplete(userId);
+      }
+
+      if (!mounted) return;
+
+      context.go(AppRoutes.auth);
+    } catch (e) {
+      debugPrint('Onboarding finish error: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Something went wrong. Please try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1E1548), AppColors.bgPrimary, Color(0xFF0A1020)],
-                stops: [0.0, 0.5, 1.0],
+      body: AppBackground(
+        child: Column(
+          children: [
+            AppBarLogo(
+              showSkip: _currentPage < 2,
+              onSkip: _onSkip,
+            ),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) {
+                  setState(() => _currentPage = i);
+                },
+                physics:
+                    const NeverScrollableScrollPhysics(),
+                children: const [
+                  OnboardingPageOne(),
+                  OnboardingPageTwo(),
+                  OnboardingPageThree(),
+                ],
               ),
             ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: _OrbSymbol(
-                    key: ValueKey(_page),
-                    symbol: _pages[_page].emoji,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 350),
-                      child: Column(
-                        key: ValueKey(_page),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _pages[_page].title,
-                            style: GoogleFonts.inter(
-                              color: AppColors.textPrimary,
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _pages[_page].subtitle,
-                            style: GoogleFonts.inter(
-                              color: AppColors.textSecondary,
-                              fontSize: 16,
-                              height: 1.6,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _pages.length,
-                    (i) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _page == i ? 24 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: _page == i ? AppColors.accentPurple : AppColors.border,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: GestureDetector(
-                    onTap: _next,
-                    child: Container(
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.accentPurple,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _page < _pages.length - 1 ? 'Continue' : 'Get started',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
+            _BottomSection(
+              currentPage: _currentPage,
+              loading: _loading,
+              onContinue: _onContinue,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomSection extends StatelessWidget {
+  final int currentPage;
+  final bool loading;
+  final VoidCallback onContinue;
+
+  const _BottomSection({
+    required this.currentPage,
+    required this.loading,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        0,
+        24,
+        40,
+      ),
+      child: Column(
+        children: [
+          _PageIndicator(currentPage: currentPage),
+          const SizedBox(height: 20),
+          CtaButton(
+            label: currentPage == 2
+                ? 'Get started →'
+                : 'Continue →',
+            loading: loading,
+            onTap: onContinue,
           ),
         ],
       ),
@@ -152,40 +160,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-class _OnboardingPage {
-  final String title;
-  final String subtitle;
-  final String emoji;
-  const _OnboardingPage({
-    required this.title,
-    required this.subtitle,
-    required this.emoji,
-  });
-}
+class _PageIndicator extends StatelessWidget {
+  final int currentPage;
 
-class _OrbSymbol extends StatelessWidget {
-  final String symbol;
-  const _OrbSymbol({super.key, required this.symbol});
+  const _PageIndicator({
+    required this.currentPage,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 96,
-      height: 96,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.accentPurple.withOpacity(0.15),
-        border: Border.all(
-          color: AppColors.accentPurple.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          symbol,
-          style: const TextStyle(color: AppColors.accentPurple, fontSize: 36),
-        ),
-      ),
+    return Row(
+      children: List.generate(3, (i) {
+        final active = i == currentPage;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.only(right: 6),
+          height: 3,
+          width: active ? 48 : 28,
+          decoration: BoxDecoration(
+            color:
+                active ? Colors.white : Colors.white24,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
     );
   }
 }
+

@@ -1,17 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'auth_provider.dart';
-import '../../app/router.dart';
-
-const _bg = Color(0xFF0A0E1A);
-const _card = Color(0xFF141830);
-const _border = Color(0xFF2A2D4A);
-const _accent = Color(0xFF6C72FF);
-const _cyan = Color(0xFF4DD9C0);
-const _textSec = Color(0xFFB0B4C8);
-const _textMuted = Color(0xFF6B6F8A);
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_controller.dart' show AuthController, AuthFormState, authControllerProvider;
+import '../../core/router/app_router.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/repositories/profile_repository.dart';
+import 'package:mind_space/shared/widgets/app_background.dart';
+import 'package:mind_space/shared/widgets/cta_button.dart';
+import 'auth_controller.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -21,298 +21,431 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
-  final _emailCtrl = TextEditingController();
+  final _emailController = TextEditingController();
+  final _focusNode = FocusNode();
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenAuthState();
+  }
+
+  void _listenAuthState() {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      if (!mounted) return;
+      if (data.event != AuthChangeEvent.signedIn) return;
+
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        context.go(AppRoutes.home);
+        return;
+      }
+
+      final profile = await ref
+          .read(profileRepositoryProvider)
+          .fetchProfile(userId);
+
+      if (!mounted) return;
+      final hasName = profile?.displayName?.trim().isNotEmpty == true;
+      context.go(hasName ? AppRoutes.home : AppRoutes.profileSetup);
+    });
+  }
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _authSub?.cancel();
+    _emailController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _onSendMagicLink() async {
-    await ref
-        .read(authNotifierProvider.notifier)
-        .sendMagicLink(_emailCtrl.text);
-    if (!mounted) return;
-    final s = ref.read(authNotifierProvider);
-    if (s.emailSent) context.go('/onboarding');
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(authControllerProvider);
+
+    return Scaffold(
+      body: AppBackground(
+        child: Column(
+          children: [
+            const AppBarLogo(),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _focusNode.unfocus(),
+                behavior: HitTestBehavior.opaque,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _Headline(),
+                      const SizedBox(height: 8),
+                      _Subtitle(),
+                      const SizedBox(height: 36),
+                      _EmailField(
+                        controller: _emailController,
+                        focusNode: _focusNode,
+                      ),
+                      const SizedBox(height: 12),
+                      CtaButton(
+                        label: 'Send magic link →',
+                        loading: state.isMagicLinkLoading,
+                        onTap: () => _sendMagicLink(state),
+                      ),
+                      const SizedBox(height: 28),
+                      const _OrDivider(),
+                      const SizedBox(height: 28),
+                      _GoogleButton(
+                        loading: state.isGoogleLoading,
+                        onTap: () => ref
+                            .read(authControllerProvider.notifier)
+                            .signInWithGoogle(),
+                      ),
+                      if (state.errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        _ErrorBanner(message: state.errorMessage!),
+                      ],
+                      if (state.magicLinkSent) ...[
+                        const SizedBox(height: 16),
+                        _SuccessBanner(email: _emailController.text.trim()),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const _LegalFooter(),
+          ],
+        ),
+      ),
+    );
   }
 
-  Future<void> _onGoogleSignIn() async {
-  await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-  if (!mounted) return;
-  final s = ref.read(authNotifierProvider);
-  if (!s.isLoading && s.emailError == null) {
-    ref.read(authStateProvider.notifier).state = true;
-    context.go('/');
+  void _sendMagicLink(AuthFormState state) {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) return;
+    _focusNode.unfocus();
+    ref.read(authControllerProvider.notifier).sendMagicLink(email);
   }
 }
 
+class _Headline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authNotifierProvider);
-
-    return Scaffold(
-      backgroundColor: _bg,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.2,
-            colors: [Color(0xFF1A1635), _bg],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
-
-                // Brand mark
-                Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xFF9D97FF), _accent],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Mind Space',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 52),
-
-                Text(
-                  'Welcome',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 44,
-                    fontWeight: FontWeight.w700,
-                    height: 1.05,
-                  ),
-                ),
-                Text(
-                  'back.',
-                  style: GoogleFonts.inter(
-                    color: _cyan,
-                    fontSize: 44,
-                    fontWeight: FontWeight.w700,
-                    fontStyle: FontStyle.italic,
-                    height: 1.05,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                Text(
-                  'Sign in to pick up where you left off. No passwords — your inbox does the work.',
-                  style: GoogleFonts.inter(
-                    color: _textSec,
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                ),
-
-                const SizedBox(height: 36),
-
-                // Email field
-                Container(
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: _card,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: auth.emailError != null
-                          ? const Color(0xFFE74C3C)
-                          : _border,
-                      width: auth.emailError != null ? 1.0 : 0.5,
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) {
-                      if (auth.emailError != null) {
-                        ref
-                            .read(authNotifierProvider.notifier)
-                            .clearError();
-                      }
-                    },
-                    style: GoogleFonts.inter(
-                        color: Colors.white, fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: 'you@example.com',
-                      hintStyle: GoogleFonts.inter(
-                          color: _textMuted, fontSize: 15),
-                      prefixIcon: Icon(Icons.mail_outline,
-                          color: _textMuted, size: 20),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                    ),
-                  ),
-                ),
-
-                if (auth.emailError != null) ...[
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Text(auth.emailError!,
-                        style: GoogleFonts.inter(
-                            color: const Color(0xFFE74C3C),
-                            fontSize: 12)),
-                  ),
-                ],
-
-                const SizedBox(height: 14),
-
-                // Send magic link button
-                GestureDetector(
-                  onTap: auth.isLoading ? null : _onSendMagicLink,
-                  child: Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [_accent, _cyan],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    alignment: Alignment.center,
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Send magic link',
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  )),
-                              const SizedBox(width: 8),
-                              const Text('→',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 16)),
-                            ],
-                          ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // OR divider
-                Row(
-                  children: [
-                    const Expanded(
-                        child: Divider(color: _border, thickness: 0.5)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('OR',
-                          style: GoogleFonts.inter(
-                              color: _textMuted,
-                              fontSize: 12,
-                              letterSpacing: 1.2)),
-                    ),
-                    const Expanded(
-                        child: Divider(color: _border, thickness: 0.5)),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Continue with Google
-                GestureDetector(
-                  onTap: _onGoogleSignIn,
-                  child: Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: _card,
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: _border, width: 0.5),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 22,
-                          height: 22,
-                          alignment: Alignment.center,
-                          child: Text('G',
-                              style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                        const SizedBox(width: 10),
-                        Text('Continue with Google',
-                            style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 56),
-
-                Center(
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: GoogleFonts.inter(
-                          color: _textMuted, fontSize: 11, height: 1.6),
-                      children: [
-                        const TextSpan(text: 'By continuing you agree to our '),
-                        TextSpan(
-                          text: 'Terms',
-                          style: GoogleFonts.inter(
-                              color: _cyan, fontSize: 11),
-                        ),
-                        const TextSpan(text: ' and '),
-                        TextSpan(
-                          text: 'Privacy',
-                          style: GoogleFonts.inter(
-                              color: _cyan, fontSize: 11),
-                        ),
-                        const TextSpan(
-                          text:
-                              '.\nSage is a reflection tool, not a substitute for professional care.',
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-              ],
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: 'Welcome ',
+            style: GoogleFonts.dmSans(
+              fontSize: 42,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
             ),
           ),
+          TextSpan(
+            text: 'in.',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 40,
+              fontStyle: FontStyle.italic,
+              color: AppColors.accentPurple,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Subtitle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'No passwords — your inbox does the work. Sign in and pick up where you left off.',
+      style: GoogleFonts.dmSans(
+        fontSize: 15,
+        color: AppColors.textMuted,
+        height: 1.55,
+      ),
+    );
+  }
+}
+
+class _EmailField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
+  const _EmailField({required this.controller, required this.focusNode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 58,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          Icon(Icons.mail_outline_rounded,
+              color: AppColors.textSubtle, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              style: GoogleFonts.dmSans(
+                fontSize: 15,
+                color: Colors.white,
+              ),
+              decoration: InputDecoration(
+                hintText: 'you@example.com',
+                hintStyle: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  color: AppColors.textSubtle,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(color: Colors.white.withOpacity(0.12), thickness: 1),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'OR',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSubtle,
+              letterSpacing: 1.4,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(color: Colors.white.withOpacity(0.12), thickness: 1),
+        ),
+      ],
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _GoogleButton({required this.loading, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: loading ? null : onTap,
+      child: Container(
+        height: 58,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: loading
+            ? const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.white54),
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _GoogleGlyph(),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Continue with Google',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+// Real Google glyph — painted manually, no asset needed
+class _GoogleGlyph extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _GoogleGlyphPainter()),
+    );
+  }
+}
+
+class _GoogleGlyphPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width / 2;
+
+    // Blue arc (top-right)
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: r),
+      -1.38, 2.76, false,
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.18,
+    );
+    // Red arc (top-left)
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: r),
+      -3.84, 1.57, false,
+      Paint()
+        ..color = const Color(0xFFEA4335)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.18,
+    );
+    // Yellow arc (bottom-left)
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: r),
+      2.36, 1.18, false,
+      Paint()
+        ..color = const Color(0xFFFBBC05)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.18,
+    );
+    // Green arc (bottom-right)
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: r),
+      1.26, 1.05, false,
+      Paint()
+        ..color = const Color(0xFF34A853)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.18,
+    );
+    // Horizontal bar (right side)
+    canvas.drawLine(
+      Offset(cx, cy),
+      Offset(size.width, cy),
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..strokeWidth = size.width * 0.18,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter _) => false;
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  const _ErrorBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Text(
+        message,
+        style: GoogleFonts.dmSans(fontSize: 13, color: Colors.redAccent),
+      ),
+    );
+  }
+}
+
+class _SuccessBanner extends StatelessWidget {
+  final String email;
+  const _SuccessBanner({required this.email});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.accentTeal.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.accentTeal.withOpacity(0.3)),
+      ),
+      child: Text(
+        'Magic link sent to $email. Check your inbox.',
+        style: GoogleFonts.dmSans(
+          fontSize: 13,
+          color: AppColors.accentTeal,
         ),
       ),
     );
   }
 }
+
+class _LegalFooter extends StatelessWidget {
+  const _LegalFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: GoogleFonts.dmSans(
+            fontSize: 12,
+            color: AppColors.textSubtle,
+            height: 1.6,
+          ),
+          children: [
+            const TextSpan(text: 'By continuing you agree to our '),
+            TextSpan(
+              text: 'Terms',
+              style: const TextStyle(color: AppColors.accentTeal),
+            ),
+            const TextSpan(text: ' and '),
+            TextSpan(
+              text: 'Privacy',
+              style: const TextStyle(color: AppColors.accentTeal),
+            ),
+            const TextSpan(
+              text: '.\nSage is a reflection tool, not a substitute for professional care.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

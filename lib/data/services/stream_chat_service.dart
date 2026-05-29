@@ -1,3 +1,0 @@
-class StreamChatService {
-  const StreamChatService();
-}
