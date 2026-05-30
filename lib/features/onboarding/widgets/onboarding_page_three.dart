@@ -183,4 +183,3 @@ class _Copy extends StatelessWidget {
     );
   }
 }
-

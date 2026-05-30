@@ -15,8 +15,7 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
 
   @override
-  ConsumerState<ProfileSetupScreen> createState() =>
-      _ProfileSetupScreenState();
+  ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
 }
 
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
@@ -80,8 +79,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           children: [
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
@@ -109,15 +107,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 onTap: () => _focusNode.unfocus(),
                 behavior: HitTestBehavior.opaque,
                 child: SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: Column(
                     children: [
                       const SizedBox(height: 32),
                       _AvatarBadge(
-                        initial: _name.isEmpty
-                            ? 'S'
-                            : _name[0].toUpperCase(),
+                        initial: _name.isEmpty ? 'S' : _name[0].toUpperCase(),
                       ),
                       const SizedBox(height: 40),
                       RichText(
@@ -275,8 +270,7 @@ class _NameField extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
       ),
       child: Row(
         children: [
@@ -288,8 +282,7 @@ class _NameField extends StatelessWidget {
               maxLength: maxLength,
               textCapitalization: TextCapitalization.words,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                    RegExp(r"[a-zA-Z\s\-']")),
+                FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\-']")),
               ],
               onSubmitted: onSubmitted,
               style: GoogleFonts.dmSans(
@@ -324,4 +317,3 @@ class _NameField extends StatelessWidget {
     );
   }
 }
-

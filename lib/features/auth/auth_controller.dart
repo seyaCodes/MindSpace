@@ -25,7 +25,8 @@ class AuthFormState {
     return AuthFormState(
       isMagicLinkLoading: isMagicLinkLoading ?? this.isMagicLinkLoading,
       isGoogleLoading: isGoogleLoading ?? this.isGoogleLoading,
-      magicLinkSent: clearSuccess ? false : (magicLinkSent ?? this.magicLinkSent),
+      magicLinkSent:
+          clearSuccess ? false : (magicLinkSent ?? this.magicLinkSent),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -98,4 +99,3 @@ final authControllerProvider =
     StateNotifierProvider<AuthController, AuthFormState>((ref) {
   return AuthController(Supabase.instance.client);
 });
-

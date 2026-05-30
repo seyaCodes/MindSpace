@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth_controller.dart' show AuthController, AuthFormState, authControllerProvider;
+import 'auth_controller.dart'
+    show AuthController, AuthFormState, authControllerProvider;
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/profile_repository.dart';
@@ -32,7 +33,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   void _listenAuthState() {
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    _authSub =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (!mounted) return;
       if (data.event != AuthChangeEvent.signedIn) return;
 
@@ -42,9 +44,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         return;
       }
 
-      final profile = await ref
-          .read(profileRepositoryProvider)
-          .fetchProfile(userId);
+      final profile =
+          await ref.read(profileRepositoryProvider).fetchProfile(userId);
 
       if (!mounted) return;
       final hasName = profile?.displayName?.trim().isNotEmpty == true;
@@ -321,7 +322,9 @@ class _GoogleGlyphPainter extends CustomPainter {
     // Blue arc (top-right)
     canvas.drawArc(
       Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      -1.38, 2.76, false,
+      -1.38,
+      2.76,
+      false,
       Paint()
         ..color = const Color(0xFF4285F4)
         ..style = PaintingStyle.stroke
@@ -330,7 +333,9 @@ class _GoogleGlyphPainter extends CustomPainter {
     // Red arc (top-left)
     canvas.drawArc(
       Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      -3.84, 1.57, false,
+      -3.84,
+      1.57,
+      false,
       Paint()
         ..color = const Color(0xFFEA4335)
         ..style = PaintingStyle.stroke
@@ -339,7 +344,9 @@ class _GoogleGlyphPainter extends CustomPainter {
     // Yellow arc (bottom-left)
     canvas.drawArc(
       Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      2.36, 1.18, false,
+      2.36,
+      1.18,
+      false,
       Paint()
         ..color = const Color(0xFFFBBC05)
         ..style = PaintingStyle.stroke
@@ -348,7 +355,9 @@ class _GoogleGlyphPainter extends CustomPainter {
     // Green arc (bottom-right)
     canvas.drawArc(
       Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      1.26, 1.05, false,
+      1.26,
+      1.05,
+      false,
       Paint()
         ..color = const Color(0xFF34A853)
         ..style = PaintingStyle.stroke
@@ -440,7 +449,8 @@ class _LegalFooter extends StatelessWidget {
               style: const TextStyle(color: AppColors.accentTeal),
             ),
             const TextSpan(
-              text: '.\nSage is a reflection tool, not a substitute for professional care.',
+              text:
+                  '.\nSage is a reflection tool, not a substitute for professional care.',
             ),
           ],
         ),
@@ -448,4 +458,3 @@ class _LegalFooter extends StatelessWidget {
     );
   }
 }
-

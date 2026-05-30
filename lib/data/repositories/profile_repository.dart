@@ -30,11 +30,8 @@ class ProfileRepository {
   ProfileRepository(this._client);
 
   Future<ProfileModel?> fetchProfile(String userId) async {
-    final response = await _client
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final response =
+        await _client.from('profiles').select().eq('id', userId).maybeSingle();
 
     if (response == null) return null;
     return ProfileModel.fromMap(response);
@@ -60,4 +57,3 @@ class ProfileRepository {
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(Supabase.instance.client);
 });
-

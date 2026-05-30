@@ -99,4 +99,3 @@ class AppBarLogo extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 }
-

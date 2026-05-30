@@ -49,8 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
       await prefs.setBool('onboarding_seen', true);
 
-      final userId =
-          Supabase.instance.client.auth.currentUser?.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
 
       if (userId != null) {
         await ProfileRepository(
@@ -102,8 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (i) {
                   setState(() => _currentPage = i);
                 },
-                physics:
-                    const NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 children: const [
                   OnboardingPageOne(),
                   OnboardingPageTwo(),
@@ -148,9 +146,7 @@ class _BottomSection extends StatelessWidget {
           _PageIndicator(currentPage: currentPage),
           const SizedBox(height: 20),
           CtaButton(
-            label: currentPage == 2
-                ? 'Get started →'
-                : 'Continue →',
+            label: currentPage == 2 ? 'Get started →' : 'Continue →',
             loading: loading,
             onTap: onContinue,
           ),
@@ -179,8 +175,7 @@ class _PageIndicator extends StatelessWidget {
           height: 3,
           width: active ? 48 : 28,
           decoration: BoxDecoration(
-            color:
-                active ? Colors.white : Colors.white24,
+            color: active ? Colors.white : Colors.white24,
             borderRadius: BorderRadius.circular(2),
           ),
         );
@@ -188,4 +183,3 @@ class _PageIndicator extends StatelessWidget {
     );
   }
 }
-

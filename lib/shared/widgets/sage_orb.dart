@@ -19,8 +19,7 @@ class SageOrb extends StatefulWidget {
   State<SageOrb> createState() => _SageOrbState();
 }
 
-class _SageOrbState extends State<SageOrb>
-    with SingleTickerProviderStateMixin {
+class _SageOrbState extends State<SageOrb> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
   late final Animation<double> _glow;
@@ -116,4 +115,3 @@ class _SageOrbState extends State<SageOrb>
     );
   }
 }
-

@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/analysis/presentation/screens/analysis_screen.dart';
+
 import '../../data/repositories/profile_repository.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
@@ -12,15 +14,18 @@ import '../../features/profile_setup/profile_setup_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/shell/presentation/widgets/shell_scaffold.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/chat/presentation/screens/chat_screen.dart';
 
 abstract class AppRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const auth = '/auth';
   static const profileSetup = '/profile-setup';
+  static const chat = '/chat';
 
   static const home = '/home';
   static const history = '/history';
+  static const analysis = '/analysis';
   static const settings = '/settings';
 }
 
@@ -31,43 +36,37 @@ final appRouterProvider = Provider<GoRouter>(
       routes: [
         GoRoute(
           path: AppRoutes.splash,
-          builder: (context, state) =>
-              const SplashScreen(),
+          builder: (context, state) => const SplashScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.onboarding,
-          builder: (context, state) =>
-              const OnboardingScreen(),
+          builder: (context, state) => const OnboardingScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.auth,
-          builder: (context, state) =>
-              const AuthScreen(),
+          builder: (context, state) => const AuthScreen(),
         ),
-
         GoRoute(
           path: AppRoutes.profileSetup,
-          builder: (context, state) =>
-              const ProfileSetupScreen(),
+          builder: (context, state) => const ProfileSetupScreen(),
         ),
-
+        GoRoute(
+  path: '/chat',
+  builder: (context, state) => const ChatScreen(),
+),
         ShellRoute(
           builder: (context, state, child) {
-            final location =
-                state.uri.toString();
+            final location = state.uri.toString();
 
             int index = 0;
 
-            if (location ==
-                AppRoutes.history) {
-              index = 1;
-            } else if (location ==
-                AppRoutes.settings) {
-              index = 2;
-            }
-
+if (location.startsWith(AppRoutes.history)) {
+  index = 1;
+} else if (location.startsWith(AppRoutes.analysis)) {
+  index = 2;
+} else if (location.startsWith(AppRoutes.settings)) {
+  index = 3;
+}
             return ShellScaffold(
               currentIndex: index,
               onTap: (index) {
@@ -77,13 +76,15 @@ final appRouterProvider = Provider<GoRouter>(
                     break;
 
                   case 1:
-                    context.go(
-                        AppRoutes.history);
+                    context.go(AppRoutes.history);
                     break;
 
                   case 2:
-                    context.go(
-                        AppRoutes.settings);
+                    context.go(AppRoutes.analysis);
+                    break;
+
+                  case 3:
+                    context.go(AppRoutes.settings);
                     break;
                 }
               },
@@ -93,50 +94,40 @@ final appRouterProvider = Provider<GoRouter>(
           routes: [
             GoRoute(
               path: AppRoutes.home,
-              builder: (context, state) =>
-                  const HomeScreen(),
+              builder: (context, state) => const HomeScreen(),
             ),
-
             GoRoute(
               path: AppRoutes.history,
-              builder: (context, state) =>
-                  const HistoryScreen(),
+              builder: (context, state) => const HistoryScreen(),
             ),
-
+            GoRoute(
+              path: AppRoutes.analysis,
+              builder: (context, state) => const AnalysisScreen(),
+            ),
             GoRoute(
               path: AppRoutes.settings,
-              builder: (context, state) =>
-                  const SettingsScreen(),
+              builder: (context, state) => const SettingsScreen(),
             ),
           ],
         ),
       ],
-
       redirect: (context, state) async {
-        final location =
-            state.uri.toString();
+        final location = state.uri.toString();
 
         // Splash handles its own navigation
         if (location == AppRoutes.splash) {
           return null;
         }
 
-        final prefs =
-            await SharedPreferences
-                .getInstance();
+        final prefs = await SharedPreferences.getInstance();
 
-        final onboardingSeen =
-            prefs.getBool('onboarding_seen') ??
-                false;
+        final onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
 
-        final session = Supabase
-            .instance.client.auth.currentSession;
+        final session = Supabase.instance.client.auth.currentSession;
 
-        final isAuth =
-            location == AppRoutes.auth;
+        final isAuth = location == AppRoutes.auth;
 
-        final isOnboarding =
-            location == AppRoutes.onboarding;
+        final isOnboarding = location == AppRoutes.onboarding;
 
         // Must complete onboarding first
         if (!onboardingSeen && !isOnboarding) {
@@ -144,9 +135,7 @@ final appRouterProvider = Provider<GoRouter>(
         }
 
         // No session — must authenticate
-        if (session == null &&
-            !isAuth &&
-            !isOnboarding) {
+        if (session == null && !isAuth && !isOnboarding) {
           return AppRoutes.auth;
         }
 
@@ -155,10 +144,13 @@ final appRouterProvider = Provider<GoRouter>(
           final profile = await ProfileRepository(
             Supabase.instance.client,
           ).fetchProfile(session.user.id);
-          final hasName =
-              profile?.displayName?.trim().isNotEmpty == true;
-          final isProfileSetup =
-              location == AppRoutes.profileSetup;
+          final hasName = profile?.displayName?.trim().isNotEmpty == true;
+          final isProfileSetup = location == AppRoutes.profileSetup;
+
+          // Logged-in user has no business on auth/onboarding
+          if (isAuth || isOnboarding) {
+            return hasName ? AppRoutes.home : AppRoutes.profileSetup;
+          }
 
           if (!hasName && !isProfileSetup) {
             return AppRoutes.profileSetup;

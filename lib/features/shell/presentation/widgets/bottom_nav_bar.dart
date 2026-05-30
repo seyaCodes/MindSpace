@@ -29,7 +29,7 @@ class MindSpaceBottomNavBar extends StatelessWidget {
             right: 16,
             child: Container(
               height: 72,
-              padding: const EdgeInsets.symmetric(horizontal: 26),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: const Color(0xFF090B2A),
                 borderRadius: BorderRadius.circular(40),
@@ -57,19 +57,21 @@ class MindSpaceBottomNavBar extends StatelessWidget {
                     active: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
-
                   const SizedBox(width: 58),
-
                   _NavItem(
-                    icon: Icons.settings_rounded,
+                    icon: Icons.trending_up_rounded,
                     active: currentIndex == 2,
                     onTap: () => onTap(2),
+                  ),
+                  _NavItem(
+                    icon: Icons.settings_rounded,
+                    active: currentIndex == 3,
+                    onTap: () => onTap(3),
                   ),
                 ],
               ),
             ),
           ),
-
           Positioned(
             top: 0,
             child: GestureDetector(
@@ -129,9 +131,7 @@ class _NavItem extends StatelessWidget {
         child: Icon(
           icon,
           size: 24,
-          color: active
-              ? Colors.white
-              : Colors.white.withOpacity(.55),
+          color: active ? Colors.white : Colors.white.withOpacity(.55),
         ),
       ),
     );

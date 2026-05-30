@@ -154,4 +154,3 @@ class _Wordmark extends StatelessWidget {
     );
   }
 }
-

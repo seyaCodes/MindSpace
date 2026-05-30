@@ -114,7 +114,8 @@ class _OrbWithSatellites extends StatelessWidget {
     return Offset(r * 0.85 * _cos(angle), r * 0.55 * _sin(angle));
   }
 
-  double _cos(double a) => (a == 0) ? 1 : (Offset(1, 0)..scale(1, 0)).dx * 0 + _mathCos(a);
+  double _cos(double a) =>
+      (a == 0) ? 1 : (Offset(1, 0)..scale(1, 0)).dx * 0 + _mathCos(a);
   double _sin(double a) => _mathSin(a);
 
   double _mathCos(double a) {
@@ -202,4 +203,3 @@ class _Copy extends StatelessWidget {
     );
   }
 }
-

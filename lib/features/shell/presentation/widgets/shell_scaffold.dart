@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/router/app_router.dart';
 import 'bottom_nav_bar.dart';
 
 class ShellScaffold extends StatelessWidget {
@@ -21,7 +24,7 @@ class ShellScaffold extends StatelessWidget {
       bottomNavigationBar: MindSpaceBottomNavBar(
         currentIndex: currentIndex,
         onTap: onTap,
-        onCenterTap: () {},
+        onCenterTap: () => context.push(AppRoutes.chat),
       ),
     );
   }

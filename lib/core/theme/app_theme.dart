@@ -59,30 +59,30 @@ abstract class AppTheme {
 
 abstract class AppColors {
   // Backgrounds
-  static const bgDeep    = Color(0xFF0D1B3E);
-  static const bgMid     = Color(0xFF1A1F4E);
-  static const bgCard    = Color(0xFF1E2456);
+  static const bgDeep = Color(0xFF0D1B3E);
+  static const bgMid = Color(0xFF1A1F4E);
+  static const bgCard = Color(0xFF1E2456);
 
   // Orb
-  static const orbLavender  = Color(0xFF9B8FD4);
-  static const orbLight     = Color(0xFFBEB3E8);
+  static const orbLavender = Color(0xFF9B8FD4);
+  static const orbLight = Color(0xFFBEB3E8);
 
   // Accents
-  static const accentTeal   = Color(0xFF6EECD4);
-  static const accentBlue   = Color(0xFF74B9FF);
+  static const accentTeal = Color(0xFF6EECD4);
+  static const accentBlue = Color(0xFF74B9FF);
   static const accentPurple = Color(0xFF9B7FD4);
 
   // Text
-  static const white      = Color(0xFFFFFFFF);
-  static const textMuted  = Color(0xFFB0B8D4);
+  static const white = Color(0xFFFFFFFF);
+  static const textMuted = Color(0xFFB0B8D4);
   static const textSubtle = Color(0xFF6B7494);
 
   // Gradient stops
-  static const gradTopLeft     = Color(0xFF4B2D8F);
+  static const gradTopLeft = Color(0xFF4B2D8F);
   static const gradBottomRight = Color(0xFF0D1B3E);
 
   // CTA button gradient
-  static const ctaLeft  = Color(0xFFA78BCA);
+  static const ctaLeft = Color(0xFFA78BCA);
   static const ctaRight = Color(0xFF6EECD4);
 }
 
@@ -100,4 +100,3 @@ abstract class AppGradients {
     colors: [AppColors.ctaLeft, AppColors.ctaRight],
   );
 }
-

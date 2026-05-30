@@ -12,11 +12,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId =
-        Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
-    final profileAsync =
-        ref.watch(_profileProvider(userId));
+    final profileAsync = ref.watch(_profileProvider(userId));
 
     return AppBackground(
       child: SafeArea(
@@ -41,14 +39,11 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-final _profileProvider =
-    FutureProvider.family<ProfileModel?, String>(
+final _profileProvider = FutureProvider.family<ProfileModel?, String>(
   (ref, userId) async {
     if (userId.isEmpty) return null;
 
-    return ref
-        .read(profileRepositoryProvider)
-        .fetchProfile(userId);
+    return ref.read(profileRepositoryProvider).fetchProfile(userId);
   },
 );
 
@@ -122,16 +117,12 @@ class _HomeBody extends StatelessWidget {
               letterSpacing: 1.4,
             ),
           ),
-
           const SizedBox(height: 8),
-
           _GreetingText(
             greeting: _greeting,
             name: displayName,
           ),
-
           const SizedBox(height: 8),
-
           Text(
             'Pick up where you left off, or start fresh.',
             style: GoogleFonts.dmSans(
@@ -140,12 +131,9 @@ class _HomeBody extends StatelessWidget {
               height: 1.5,
             ),
           ),
-
           const SizedBox(height: 36),
-
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Open threads',
@@ -165,9 +153,7 @@ class _HomeBody extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
           _EmptyGrid(),
         ],
       ),
@@ -203,8 +189,7 @@ class _GreetingText extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 52,
               fontWeight: FontWeight.w800,
-              color: AppColors.orbLavender
-                  .withOpacity(.6),
+              color: AppColors.orbLavender.withOpacity(.6),
               height: 1.1,
             ),
           ),
@@ -217,15 +202,12 @@ class _GreetingText extends StatelessWidget {
 class _EmptyGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final size =
-        (MediaQuery.of(context).size.width - 48 - 12) /
-            2;
+    final size = (MediaQuery.of(context).size.width - 48 - 12) / 2;
 
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
-      physics:
-          const NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: .82,
@@ -248,8 +230,7 @@ class _NewThreadCell extends StatelessWidget {
     return GestureDetector(
       onTap: () {},
       child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             width: size * .72,
@@ -259,8 +240,7 @@ class _NewThreadCell extends StatelessWidget {
               border: Border.all(
                 color: Colors.white24,
                 width: 1.5,
-                strokeAlign:
-                    BorderSide.strokeAlignInside,
+                strokeAlign: BorderSide.strokeAlignInside,
               ),
               color: Colors.white.withOpacity(.04),
             ),
@@ -270,9 +250,7 @@ class _NewThreadCell extends StatelessWidget {
               size: 32,
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text(
             'New Thread',
             style: GoogleFonts.dmSans(
