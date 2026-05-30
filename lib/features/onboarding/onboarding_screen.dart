@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../core/router/app_router.dart';
 import 'package:mind_space/shared/widgets/app_background.dart';
 import 'package:mind_space/shared/widgets/cta_button.dart';
-import '../../data/repositories/profile_repository.dart';
 import 'widgets/onboarding_page_one.dart';
 import 'widgets/onboarding_page_two.dart';
 import 'widgets/onboarding_page_three.dart';
@@ -48,14 +45,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final prefs = await SharedPreferences.getInstance();
 
       await prefs.setBool('onboarding_seen', true);
-
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-
-      if (userId != null) {
-        await ProfileRepository(
-          Supabase.instance.client,
-        ).markOnboardingComplete(userId);
-      }
 
       if (!mounted) return;
 

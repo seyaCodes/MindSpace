@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatHeader extends StatelessWidget {
-  const ChatHeader({super.key});
+  final VoidCallback? onBack;
+
+  const ChatHeader({super.key, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -10,9 +13,7 @@ class ChatHeader extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: onBack ?? () => context.pop(),
             icon: const Icon(
               Icons.arrow_back_ios,
               color: Colors.white,
