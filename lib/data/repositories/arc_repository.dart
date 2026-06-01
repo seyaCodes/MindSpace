@@ -66,13 +66,13 @@ class ArcRepository {
     if (result == null) return null;
     return ArcModel.fromJson(result);
   }
-Future<void> renameArc(String id, String name) async {
-  await _client.from('arcs').update({
-    'name': name,
-    'user_renamed': true,
-  }).eq('id', id);
-}
-  
+
+  Future<void> renameArc(String id, String name) async {
+    await _client.from('arcs').update({
+      'name': name,
+      'user_renamed': true,
+    }).eq('id', id);
+  }
 
   Future<void> archiveArc(String id) async {
     await _client.from('arcs').update({
@@ -96,42 +96,43 @@ Future<void> renameArc(String id, String name) async {
   }
 
   Future<List<dynamic>> getInsights(String arcId) async {
-  return await _client
-      .from('arc_insights')
-      .select()
-      .eq('arc_id', arcId)
-      .order('generated_at', ascending: false);
-}
-
-Future<void> incrementSessionCount(String arcId) async {
-  final arc = await getArc(arcId);
-
-  if (arc == null) {
-    throw Exception('Arc not found: $arcId');
+    return await _client
+        .from('arc_insights')
+        .select()
+        .eq('arc_id', arcId)
+        .order('generated_at', ascending: false);
   }
 
-  await _client
-      .from('arcs')
-      .update({
-        'session_count': arc.sessionCount + 1,
-        'last_session_at': DateTime.now().toUtc().toIso8601String(),
-      })
-      .eq('id', arcId);
-}
+  Future<void> incrementSessionCount(String arcId) async {
+    final arc = await getArc(arcId);
 
-Future<ArcModel> getOrCreateActiveArc(String userId) async {
-  final arcs = await getArcs();
+    if (arc == null) {
+      throw Exception('Arc not found: $arcId');
+    }
 
-  if (arcs.isNotEmpty) {
-    return arcs.first;
+    await _client
+        .from('arcs')
+        .update({
+          'session_count': arc.sessionCount + 1,
+          'last_session_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', arcId);
   }
 
-  return createArc(
-    userId: userId,
-    name: 'My Journey',
-  );
+  Future<ArcModel> getOrCreateActiveArc(String userId) async {
+    final arcs = await getArcs();
+
+    if (arcs.isNotEmpty) {
+      return arcs.first;
+    }
+
+    return createArc(
+      userId: userId,
+      name: 'My Journey',
+    );
+  }
 }
-}
+
 final arcRepositoryProvider = Provider<ArcRepository>(
   (ref) => ArcRepository(Supabase.instance.client),
 );

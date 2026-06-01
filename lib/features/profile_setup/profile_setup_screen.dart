@@ -177,7 +177,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 24,
                 12,
                 24,
-                MediaQuery.of(context).viewInsets.bottom + 32,
+                MediaQuery.of(context).padding.bottom + 16,
               ),
               child: CtaButton(
                 label: 'Enter Mind Space →',

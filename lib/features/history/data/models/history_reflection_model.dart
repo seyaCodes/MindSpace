@@ -14,7 +14,7 @@ class HistoryReflectionModel extends HistoryReflection {
   ) {
     return HistoryReflectionModel(
       id: json['id'],
-      arcId: json['arc_id'],
+      arcId: json['arc_id'] as String? ?? '',
       title: json['question_to_sit_with'] ?? '',
       summary: json['what_sage_heard'] ?? '',
       createdAt: DateTime.parse(

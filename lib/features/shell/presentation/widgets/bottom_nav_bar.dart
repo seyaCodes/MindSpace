@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mind_space/core/theme/app_theme.dart';
 
 class MindSpaceBottomNavBar extends StatelessWidget {
   final int currentIndex;

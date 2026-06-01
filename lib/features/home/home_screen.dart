@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/providers/arc_providers.dart';
+import '../../data/repositories/arc_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../shared/widgets/app_background.dart';
 
@@ -42,24 +46,19 @@ class HomeScreen extends ConsumerWidget {
 final _profileProvider = FutureProvider.family<ProfileModel?, String>(
   (ref, userId) async {
     if (userId.isEmpty) return null;
-
     return ref.read(profileRepositoryProvider).fetchProfile(userId);
   },
 );
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends ConsumerWidget {
   final String displayName;
 
-  const _HomeBody({
-    required this.displayName,
-  });
+  const _HomeBody({required this.displayName});
 
   String get _greeting {
     final hour = DateTime.now().hour;
-
     if (hour < 12) return 'Morning';
     if (hour < 17) return 'Afternoon';
-
     return 'Evening';
   }
 
@@ -67,44 +66,25 @@ class _HomeBody extends StatelessWidget {
     final now = DateTime.now();
 
     const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday',
     ];
 
     const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
-    return '${days[now.weekday - 1]}, '
-            '${months[now.month - 1]} ${now.day}'
+    return '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}'
         .toUpperCase();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final arcsAsync = ref.watch(arcsProvider);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        140,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -118,10 +98,7 @@ class _HomeBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _GreetingText(
-            greeting: _greeting,
-            name: displayName,
-          ),
+          _GreetingText(greeting: _greeting, name: displayName),
           const SizedBox(height: 8),
           Text(
             'Pick up where you left off, or start fresh.',
@@ -136,25 +113,34 @@ class _HomeBody extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Open threads',
+                'Your arcs',
                 style: GoogleFonts.dmSans(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              Text(
-                'view all ›',
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  color: AppColors.accentPurple,
-                  fontWeight: FontWeight.w500,
+              GestureDetector(
+                onTap: () => context.go(AppRoutes.history),
+                child: Text(
+                  'view all ›',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    color: AppColors.accentPurple,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          _EmptyGrid(),
+          arcsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.orbLavender),
+            ),
+            error: (_, __) => _ArcGrid(arcs: const []),
+            data: (arcs) => _ArcGrid(arcs: arcs),
+          ),
         ],
       ),
     );
@@ -165,10 +151,7 @@ class _GreetingText extends StatelessWidget {
   final String greeting;
   final String name;
 
-  const _GreetingText({
-    required this.greeting,
-    required this.name,
-  });
+  const _GreetingText({required this.greeting, required this.name});
 
   @override
   Widget build(BuildContext context) {
@@ -199,10 +182,14 @@ class _GreetingText extends StatelessWidget {
   }
 }
 
-class _EmptyGrid extends StatelessWidget {
+class _ArcGrid extends StatelessWidget {
+  final List<ArcModel> arcs;
+
+  const _ArcGrid({required this.arcs});
+
   @override
   Widget build(BuildContext context) {
-    final size = (MediaQuery.of(context).size.width - 48 - 12) / 2;
+    final cellSize = (MediaQuery.of(context).size.width - 48 - 12) / 2;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -212,8 +199,70 @@ class _EmptyGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: .82,
       children: [
-        _NewThreadCell(size: size),
+        ...arcs.map((arc) => _ArcCard(arc: arc)),
+        _NewThreadCell(size: cellSize),
       ],
+    );
+  }
+}
+
+class _ArcCard extends StatelessWidget {
+  final ArcModel arc;
+
+  const _ArcCard({required this.arc});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('${AppRoutes.arcDetail}/${arc.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.orbLavender.withOpacity(.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.orbLavender.withOpacity(.15),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: AppColors.orbLavender,
+                size: 18,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              arc.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'}',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                color: AppColors.textSubtle,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -221,14 +270,12 @@ class _EmptyGrid extends StatelessWidget {
 class _NewThreadCell extends StatelessWidget {
   final double size;
 
-  const _NewThreadCell({
-    required this.size,
-  });
+  const _NewThreadCell({required this.size});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => context.push(AppRoutes.chat),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth_controller.dart'
-    show AuthController, AuthFormState, authControllerProvider;
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/profile_repository.dart';
@@ -110,12 +108,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 16),
                         _SuccessBanner(email: _emailController.text.trim()),
                       ],
+                      const _LegalFooter(),
                     ],
                   ),
                 ),
               ),
             ),
-            const _LegalFooter(),
           ],
         ),
       ),
@@ -428,7 +426,10 @@ class _LegalFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(
+        24, 16, 24,
+        MediaQuery.of(context).padding.bottom + 16,
+      ),
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
