@@ -19,15 +19,6 @@ class HistoryScreen extends ConsumerStatefulWidget {
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   bool _showTimeline = true;
   String _searchQuery = '';
-  String _selectedEmotion = 'All';
-
-  static const _emotions = ['All', 'Anxious', 'Sad', 'Calm', 'Happy'];
-  static const _emotionColors = {
-    'Anxious': Color(0xFF9B59B6),
-    'Sad': Color(0xFF3498DB),
-    'Calm': Color(0xFF1ABC9C),
-    'Happy': Color(0xFFF1C40F),
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -69,14 +60,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     _SearchBar(
                       onChanged: (q) => setState(() => _searchQuery = q),
                     ),
-                    const SizedBox(height: 12),
-                    _EmotionFilters(
-                      emotions: _emotions,
-                      emotionColors: _emotionColors,
-                      selected: _selectedEmotion,
-                      onSelect: (e) =>
-                          setState(() => _selectedEmotion = e),
-                    ),
                   ],
                 ],
               ),
@@ -84,10 +67,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: _showTimeline
-                  ? _TimelineView(
-                      searchQuery: _searchQuery,
-                      emotionFilter: _selectedEmotion,
-                    )
+                  ? _TimelineView(searchQuery: _searchQuery)
                   : const _ArcsView(),
             ),
           ],
@@ -147,84 +127,6 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ── Emotion filter chips ──────────────────────────────────────────────────────
-
-class _EmotionFilters extends StatelessWidget {
-  final List<String> emotions;
-  final Map<String, Color> emotionColors;
-  final String selected;
-  final ValueChanged<String> onSelect;
-
-  const _EmotionFilters({
-    required this.emotions,
-    required this.emotionColors,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: emotions.map((e) {
-          final isSelected = e == selected;
-          final color = emotionColors[e] ?? const Color(0xFF1ABC9C);
-          return GestureDetector(
-            onTap: () => onSelect(e),
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? (e == 'All' ? const Color(0xFF1ABC9C) : color)
-                        .withOpacity(.2)
-                    : Colors.white.withOpacity(.05),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? (e == 'All'
-                              ? const Color(0xFF1ABC9C)
-                              : color)
-                          .withOpacity(.5)
-                      : Colors.white.withOpacity(.1),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (e != 'All') ...[
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                  ],
-                  Text(
-                    e,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: isSelected ? Colors.white : Colors.white60,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
 // ── Tab toggle ────────────────────────────────────────────────────────────────
 
 class _TabToggle extends StatelessWidget {
@@ -247,6 +149,7 @@ class _TabToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TabItem(
             label: 'Timeline',
@@ -285,6 +188,7 @@ class _TabItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             gradient: selected
@@ -321,12 +225,8 @@ class _TabItem extends StatelessWidget {
 
 class _TimelineView extends ConsumerWidget {
   final String searchQuery;
-  final String emotionFilter;
 
-  const _TimelineView({
-    required this.searchQuery,
-    required this.emotionFilter,
-  });
+  const _TimelineView({required this.searchQuery});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -337,12 +237,6 @@ class _TimelineView extends ConsumerWidget {
       ),
       error: (_, __) => const _EmptyTimelineView(),
       data: (reflections) {
-        // Emotion filter: no emotion data in DB yet → non-All selections yield 0 results
-        if (emotionFilter != 'All') {
-          return _EmptyFilterView(emotion: emotionFilter);
-        }
-
-        // Apply search filter
         var filtered = reflections;
         if (searchQuery.isNotEmpty) {
           final q = searchQuery.toLowerCase();
@@ -480,34 +374,39 @@ class _TimelineTile extends StatelessWidget {
               child: Row(
                 children: [
                   if (hasArc)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: chipColor.withOpacity(.18),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: chipColor.withOpacity(.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.folder_outlined,
-                              size: 11, color: chipColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            reflection.arcName!.toUpperCase(),
-                            style: GoogleFonts.dmSans(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: chipColor,
-                              letterSpacing: 0.9,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: chipColor.withOpacity(.18),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: chipColor.withOpacity(.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.folder_outlined,
+                                size: 11, color: chipColor),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                reflection.arcName!.toUpperCase(),
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: chipColor,
+                                  letterSpacing: 0.9,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Text(
                     _time(reflection.createdAt),
                     style: GoogleFonts.dmSans(
@@ -520,26 +419,19 @@ class _TimelineTile extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-              child: hasArc
-                  ? RichText(
-                      text: TextSpan(
-                        children:
-                            _buildArcNameSpans(reflection.arcName!, chipColor),
-                      ),
-                    )
-                  : Text(
-                      reflection.title.isNotEmpty
-                          ? reflection.title
-                          : reflection.summary,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.3,
-                      ),
-                    ),
+              child: Text(
+                reflection.title.isNotEmpty
+                    ? reflection.title
+                    : reflection.summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1.3,
+                ),
+              ),
             ),
             if (reflection.summary.isNotEmpty)
               Padding(
@@ -588,80 +480,6 @@ class _TimelineTile extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<TextSpan> _buildArcNameSpans(String name, Color accentColor) {
-    final words = name.split(' ');
-    if (words.length <= 1) {
-      return [
-        TextSpan(
-          text: name,
-          style: GoogleFonts.dmSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            height: 1.3,
-          ),
-        ),
-      ];
-    }
-    return [
-      TextSpan(
-        text: '${words.first} ',
-        style: GoogleFonts.dmSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
-          height: 1.3,
-        ),
-      ),
-      TextSpan(
-        text: words.skip(1).join(' '),
-        style: GoogleFonts.dmSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: accentColor.withOpacity(.72),
-          height: 1.3,
-        ),
-      ),
-    ];
-  }
-}
-
-class _EmptyFilterView extends StatelessWidget {
-  final String emotion;
-
-  const _EmptyFilterView({required this.emotion});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.sentiment_neutral_rounded,
-                size: 56, color: Colors.white.withOpacity(.2)),
-            const SizedBox(height: 16),
-            Text(
-              'No $emotion sessions yet',
-              style: GoogleFonts.dmSans(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Emotion tracking will surface here as you reflect.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(color: Colors.white38, fontSize: 13),
             ),
           ],
         ),
@@ -761,7 +579,6 @@ class _ArcsViewState extends ConsumerState<_ArcsView> {
                     ],
                   ),
                   const Spacer(),
-                  // Organize button
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 7),

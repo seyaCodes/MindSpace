@@ -211,11 +211,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final showWrapUp = _userMessageCount >= 4 && !_wrappingUp;
 
-    final arcsAsync = ref.watch(arcsProvider);
-    final recentArcName = arcsAsync.valueOrNull?.isNotEmpty == true
-        ? arcsAsync.valueOrNull!.first.name
-        : null;
-
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) {
@@ -238,7 +233,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onBack: () => _handleBack(),
                   showWrapUp: showWrapUp,
                   onWrapUp: _wrapUpSession,
-                  arcName: recentArcName,
+                  arcName: null, // never show an arc name until wrap-up assigns one
                 ),
                 if (_wrappingUp)
                   Container(
@@ -327,9 +322,17 @@ class _ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white70),
+          TextButton.icon(
             onPressed: onBack,
+            icon: const Icon(Icons.arrow_back, color: Colors.white70),
+            label: const Text(
+              '< Home',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Expanded(
             child: Center(
@@ -366,23 +369,31 @@ class _ChatHeader extends StatelessWidget {
                         ],
                       ),
                     )
-                  : const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Sage',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                  : Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(.12)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add,
+                              size: 12, color: Colors.white54),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'no arc yet',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'listening',
-                          style:
-                              TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ),

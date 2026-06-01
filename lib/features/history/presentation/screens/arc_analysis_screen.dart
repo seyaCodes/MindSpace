@@ -176,33 +176,65 @@ class _InsightContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final howItEvolved = insight['how_it_evolved'] as String? ?? '';
     final patternNoticed = insight['pattern_noticed'] as String? ?? '';
+    final turningPoint = insight['turning_point'] as String?;
+    final turningPointContext = insight['turning_point_context'] as String?
+        ?? insight['turning_point_description'] as String?;
+
+    final spanDays = arc.archivedAt != null
+        ? arc.archivedAt!.difference(arc.createdAt).inDays
+        : DateTime.now().difference(arc.createdAt).inDays;
+    final weeksSpan = spanDays / 7;
+    final frequency = weeksSpan > 0
+        ? (arc.sessionCount / weeksSpan).toStringAsFixed(1)
+        : '—';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Sessions context ─────────────────────────────────────
-        Text(
-          'Across ${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'} over ${DateTime.now().difference(arc.createdAt).inDays} days, here\'s what emerged:',
-          style: GoogleFonts.dmSans(
-            fontSize: 15,
-            color: Colors.white60,
-            height: 1.65,
-            fontStyle: FontStyle.italic,
-          ),
+        // ── Inline stats row ─────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _StatBox(
+                label: 'SESSIONS',
+                value: '${arc.sessionCount}',
+                sub: 'over time',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatBox(
+                label: 'SPAN',
+                value: '$spanDays days',
+                sub: arc.archivedAt != null ? 'closed' : 'active',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatBox(
+                label: 'FREQUENCY',
+                value: '${frequency}/wk',
+                sub: 'sessions',
+              ),
+            ),
+          ],
         ),
 
+        // ── How it evolved ───────────────────────────────────────
         if (howItEvolved.isNotEmpty) ...[
           const SizedBox(height: 20),
           Text(
-            howItEvolved,
+            'Across ${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'} over $spanDays days, $howItEvolved',
             style: GoogleFonts.dmSans(
-              fontSize: 16,
-              color: Colors.white,
-              height: 1.7,
+              fontSize: 15,
+              color: Colors.white60,
+              height: 1.65,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
 
+        // ── Pattern card ─────────────────────────────────────────
         if (patternNoticed.isNotEmpty) ...[
           const SizedBox(height: 20),
           _InsightCard(
@@ -214,8 +246,19 @@ class _InsightContent extends StatelessWidget {
           ),
         ],
 
-        const SizedBox(height: 28),
-        _SessionsOverview(arc: arc, color: color),
+        // ── Turning point ────────────────────────────────────────
+        if (turningPoint != null && turningPoint.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _InsightCard(
+            label: 'TURNING POINT',
+            labelColor: const Color(0xFF6EECD4),
+            content: '"$turningPoint"',
+            subContent: turningPointContext,
+            borderColor: const Color(0xFF6EECD4).withOpacity(.25),
+            bgColor: const Color(0xFF6EECD4).withOpacity(.05),
+            italic: true,
+          ),
+        ],
       ],
     );
   }
@@ -227,6 +270,8 @@ class _InsightCard extends StatelessWidget {
   final String content;
   final Color borderColor;
   final Color bgColor;
+  final String? subContent;
+  final bool italic;
 
   const _InsightCard({
     required this.label,
@@ -234,6 +279,8 @@ class _InsightCard extends StatelessWidget {
     required this.content,
     required this.borderColor,
     required this.bgColor,
+    this.subContent,
+    this.italic = false,
   });
 
   @override
@@ -276,99 +323,78 @@ class _InsightCard extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 16,
               fontWeight: FontWeight.w600,
+              fontStyle: italic ? FontStyle.italic : FontStyle.normal,
               color: Colors.white,
               height: 1.5,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SessionsOverview extends StatelessWidget {
-  final HistoryArc arc;
-  final Color color;
-
-  const _SessionsOverview({required this.arc, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final spanDays = arc.archivedAt != null
-        ? arc.archivedAt!.difference(arc.createdAt).inDays
-        : DateTime.now().difference(arc.createdAt).inDays;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ARC OVERVIEW',
-            style: GoogleFonts.dmSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Colors.white38,
-              letterSpacing: 1.4,
-            ),
-          ),
-          const SizedBox(height: 14),
-          _OverviewRow(label: 'Sessions', value: '${arc.sessionCount}'),
-          const SizedBox(height: 8),
-          _OverviewRow(
-            label: 'Started',
-            value: _formatDate(arc.createdAt),
-          ),
-          if (arc.archivedAt != null) ...[
+          if (subContent != null && subContent!.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _OverviewRow(
-                label: 'Closed', value: _formatDate(arc.archivedAt!)),
+            Text(
+              subContent!,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: Colors.white54,
+                height: 1.5,
+              ),
+            ),
           ],
-          const SizedBox(height: 8),
-          _OverviewRow(label: 'Span', value: '${spanDays} days'),
         ],
       ),
     );
   }
-
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
 }
 
-class _OverviewRow extends StatelessWidget {
+class _StatBox extends StatelessWidget {
   final String label;
   final String value;
+  final String sub;
 
-  const _OverviewRow({required this.label, required this.value});
+  const _StatBox({
+    required this.label,
+    required this.value,
+    required this.sub,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.dmSans(fontSize: 14, color: Colors.white38),
+    return Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.04),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(.08)),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.white38,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: GoogleFonts.dmSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              sub,
+              style: GoogleFonts.dmSans(
+                fontSize: 10,
+                color: Colors.white38,
+              ),
+            ),
+          ],
         ),
-      ],
     );
   }
 }

@@ -348,6 +348,95 @@ class _ArcDetailBodyState extends ConsumerState<_ArcDetailBody> {
                 // ── Stats row ───────────────────────────────────
                 _StatsRow(arc: _arc),
 
+                const SizedBox(height: 28),
+
+                // ── CTAs: Continue chatting + Open Analysis ─────
+                if (!_isArchived) ...[
+                  GestureDetector(
+                    onTap: () => context.push('${AppRoutes.chat}?arcId=${_arc.id}'),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFB084FC), Color(0xFF14B8A6)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.message, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Continue chatting',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'Pick up inside ${_arc.name}',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                GestureDetector(
+                  onTap: () => context.push('/arc/${_arc.id}/analysis'),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.05),
+                      border: Border.all(color: Colors.white.withOpacity(.1)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insights, color: Color(0xFF14B8A6), size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Open Analysis',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'What this arc is teaching you',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward, color: Colors.white54, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 32),
 
                 // ── Sessions header ─────────────────────────────
@@ -380,9 +469,7 @@ class _ArcDetailBodyState extends ConsumerState<_ArcDetailBody> {
 
         // ── Sessions list ─────────────────────────────────────────
         reflectionsAsync.when(
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator(color: Colors.white30)),
-          ),
+          loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
           error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
           data: (sessions) {
             if (sessions.isEmpty) {
@@ -412,94 +499,9 @@ class _ArcDetailBodyState extends ConsumerState<_ArcDetailBody> {
           },
         ),
 
-        // ── Open Analysis CTA ─────────────────────────────────────
-        insightsAsync.maybeWhen(
-          data: (insights) {
-            if (insights.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-            return SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: GestureDetector(
-                  onTap: () => context.push('/arc/${_arc.id}/analysis'),
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          color.withOpacity(.15),
-                          const Color(0xFF1ABC9C).withOpacity(.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: color.withOpacity(.25)),
-                    ),
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ANALYSIS',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: color,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'What this arc is teaching you',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Icon(Icons.arrow_forward_ios_rounded,
-                            size: 14, color: color),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-          orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-        ),
-
-        // ── New session FAB space + Continue button ───────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
-            child: !_isArchived
-                ? GestureDetector(
-                    onTap: () => context.push(AppRoutes.chat),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFA970FF), Color(0xFF6EECD4)],
-                        ),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Continue Session',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+        // ── Bottom spacing ────────────────────────────────────────
+        const SliverToBoxAdapter(
+          child: SizedBox(height: 120),
         ),
       ],
     );
@@ -732,8 +734,7 @@ class _SessionCard extends StatelessWidget {
     ];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final sessionDay =
-        DateTime(dt.year, dt.month, dt.day);
+    final sessionDay = DateTime(dt.year, dt.month, dt.day);
     final currentYear = now.year;
     String dateStr;
     if (sessionDay == today) {
@@ -743,95 +744,93 @@ class _SessionCard extends StatelessWidget {
     } else {
       dateStr = '${months[dt.month - 1]} ${dt.day}';
     }
-    final prefix = dateStr;
     final h = dt.hour;
     final m = dt.minute.toString().padLeft(2, '0');
     final period = h >= 12 ? 'PM' : 'AM';
     final hour = h % 12 == 0 ? 12 : h % 12;
-    return '$prefix · $hour:$m $period';
+    return '$dateStr · $hour:$m $period';
   }
 
   @override
   Widget build(BuildContext context) {
+    final tone = session.sessionTone;
+
     return GestureDetector(
-      onTap: () =>
-          context.push('${AppRoutes.sessionDetail}/${session.id}'),
+      onTap: () => context.push('${AppRoutes.sessionDetail}/${session.id}'),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(.04),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white.withOpacity(.07)),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 3,
-              decoration: BoxDecoration(
-                color: accentColor.withOpacity(.6),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  bottomLeft: Radius.circular(18),
-                ),
+            Text(
+              _formatDateTime(session.createdAt),
+              style: GoogleFonts.dmSans(
+                fontSize: 11,
+                color: Colors.white38,
+                letterSpacing: 1.1,
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatDateTime(session.createdAt),
-                      style: GoogleFonts.dmSans(
-                        fontSize: 11,
-                        color: Colors.white38,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    if (session.questionToSitWith.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        session.questionToSitWith,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                    if (session.whatSageHeard.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        session.whatSageHeard,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13,
-                          color: Colors.white54,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        'Open →',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white54,
-                        ),
-                      ),
-                    ),
-                  ],
+            if (session.questionToSitWith.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                session.questionToSitWith,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.3,
                 ),
               ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (tone != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: accentColor.withOpacity(.3)),
+                    ),
+                    child: Text(
+                      tone.toUpperCase(),
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    'Open ›',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor.withOpacity(.8),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

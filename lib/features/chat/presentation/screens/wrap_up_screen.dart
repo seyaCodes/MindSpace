@@ -182,27 +182,36 @@ class _Body extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        'Sage thinks this lives near ',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          color: Colors.white54,
-                        ),
-                      ),
-                      Text(
-                        data!.arcName!,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '. Confirm >',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          color: Colors.white38,
+                      Flexible(
+                        child: RichText(
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Sage thinks this lives near ',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                              TextSpan(
+                                text: data!.arcName!,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' . Confirm >',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  color: Colors.white38,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -264,32 +273,35 @@ class _Body extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (data?.arcId != null) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => context
-                        .push('${AppRoutes.arcDetail}/${data!.arcId}'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA970FF),
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 15),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (data?.arcId != null) {
+                      context.push('${AppRoutes.arcDetail}/${data!.arcId}');
+                    } else {
+                      context.go(AppRoutes.history);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA970FF),
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 15),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
                     ),
-                    child: Text(
-                      'View Arc',
-                      style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+                  ),
+                  child: Text(
+                    data?.arcId != null ? 'View Arc' : 'View History',
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),

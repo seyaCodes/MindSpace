@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +21,11 @@ import '../../features/profile_setup/profile_setup_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/shell/presentation/widgets/shell_scaffold.dart';
 import '../../features/splash/splash_screen.dart';
+
+// Navigator keys — ensures routes outside ShellRoute always use the root
+// navigator, even when pushed from within the shell's inner navigator.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 // Notifies GoRouter whenever Supabase auth state changes so redirect re-runs
 // automatically — fixes the case where OAuth login completes but the router
@@ -62,6 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(notifier.dispose);
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: notifier,
     routes: [
@@ -81,36 +87,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.profileSetup,
         builder: (context, state) => const ProfileSetupScreen(),
       ),
+      // These routes must use parentNavigatorKey so they always push onto the
+      // root navigator when called via context.push() from inside ShellRoute.
       GoRoute(
         path: '/chat',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ChatScreen(),
       ),
-      // Shown immediately after Wrap Up — displays the AI reflection and arc.
       GoRoute(
         path: '/wrap-up/:chatId',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => WrapUpScreen(
           chatId: state.pathParameters['chatId']!,
         ),
       ),
       GoRoute(
         path: '/arc/:id',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => ArcDetailScreen(
           arcId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(
         path: '/arc/:id/analysis',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => ArcAnalysisScreen(
           arcId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(
         path: '/session/:id',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => SessionDetailScreen(
           sessionId: state.pathParameters['id']!,
         ),
       ),
       ShellRoute(
+        navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
           final location = state.uri.toString();
 
