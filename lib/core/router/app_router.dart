@@ -11,6 +11,7 @@ import '../../data/repositories/profile_repository.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/wrap_up_screen.dart';
+import '../../features/history/presentation/screens/arc_analysis_screen.dart';
 import '../../features/history/presentation/screens/arc_detail_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
 import '../../features/history/presentation/screens/session_detail_screen.dart';
@@ -94,6 +95,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/arc/:id',
         builder: (context, state) => ArcDetailScreen(
+          arcId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/arc/:id/analysis',
+        builder: (context, state) => ArcAnalysisScreen(
           arcId: state.pathParameters['id']!,
         ),
       ),

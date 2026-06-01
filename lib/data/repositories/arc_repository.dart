@@ -119,6 +119,17 @@ class ArcRepository {
         .eq('id', arcId);
   }
 
+  Future<void> deleteArc(String id) async {
+    await _client.from('arcs').delete().eq('id', id);
+  }
+
+  Future<void> reviveArc(String id) async {
+    await _client.from('arcs').update({
+      'status': 'active',
+      'archived_at': null,
+    }).eq('id', id);
+  }
+
   Future<ArcModel> getOrCreateActiveArc(String userId) async {
     final arcs = await getArcs();
 

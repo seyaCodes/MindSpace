@@ -211,6 +211,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final showWrapUp = _userMessageCount >= 4 && !_wrappingUp;
 
+    final arcsAsync = ref.watch(arcsProvider);
+    final recentArcName = arcsAsync.valueOrNull?.isNotEmpty == true
+        ? arcsAsync.valueOrNull!.first.name
+        : null;
+
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) {
@@ -233,6 +238,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onBack: () => _handleBack(),
                   showWrapUp: showWrapUp,
                   onWrapUp: _wrapUpSession,
+                  arcName: recentArcName,
                 ),
                 if (_wrappingUp)
                   Container(
@@ -306,11 +312,13 @@ class _ChatHeader extends StatelessWidget {
   final VoidCallback onBack;
   final bool showWrapUp;
   final VoidCallback onWrapUp;
+  final String? arcName;
 
   const _ChatHeader({
     required this.onBack,
     required this.showWrapUp,
     required this.onWrapUp,
+    this.arcName,
   });
 
   @override
@@ -323,22 +331,59 @@ class _ChatHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back, color: Colors.white70),
             onPressed: onBack,
           ),
-          const Expanded(
-            child: Column(
-              children: [
-                Text(
-                  'Sage',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'listening',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-              ],
+          Expanded(
+            child: Center(
+              child: arcName != null
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(.15)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.folder_outlined,
+                              size: 13, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              arcName!,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 16, color: Colors.white54),
+                        ],
+                      ),
+                    )
+                  : const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Sage',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'listening',
+                          style:
+                              TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
+                    ),
             ),
           ),
           if (showWrapUp)

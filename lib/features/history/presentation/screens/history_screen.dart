@@ -4,13 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/utils/arc_color.dart';
 import '../../data/models/history_arc_model.dart';
 import '../../data/models/history_reflection_model.dart';
 import '../../data/providers/history_providers.dart';
-
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -21,11 +18,21 @@ class HistoryScreen extends ConsumerStatefulWidget {
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   bool _showTimeline = true;
+  String _searchQuery = '';
+  String _selectedEmotion = 'All';
+
+  static const _emotions = ['All', 'Anxious', 'Sad', 'Calm', 'Happy'];
+  static const _emotionColors = {
+    'Anxious': Color(0xFF9B59B6),
+    'Sad': Color(0xFF3498DB),
+    'Calm': Color(0xFF1ABC9C),
+    'Happy': Color(0xFFF1C40F),
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF171F5A),
+      backgroundColor: const Color(0xFF0E1547),
       body: SafeArea(
         child: Column(
           children: [
@@ -37,93 +44,50 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 children: [
                   Text(
                     'History',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.05,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    'Your story chapters',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: Colors.white70),
+                    _showTimeline ? 'Your memory vault' : 'Your story chapters',
+                    style: GoogleFonts.dmSans(
+                        fontSize: 15, color: Colors.white54),
                   ),
-                  const SizedBox(height: 28),
-                  // Tab toggle — unchanged visually
-                  Container(
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.06),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _showTimeline = true),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: _showTimeline
-                                    ? const LinearGradient(
-                                        colors: [
-                                          Color(0xFFA78BFA),
-                                          Color(0xFF7DD3FC),
-                                        ],
-                                      )
-                                    : null,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Timeline',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _showTimeline = false),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: !_showTimeline
-                                    ? const LinearGradient(
-                                        colors: [
-                                          Color(0xFFA78BFA),
-                                          Color(0xFF7DD3FC),
-                                        ],
-                                      )
-                                    : null,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Arcs',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 20),
+                  _TabToggle(
+                    showTimeline: _showTimeline,
+                    onTimeline: () => setState(() => _showTimeline = true),
+                    onArcs: () => setState(() => _showTimeline = false),
                   ),
+                  // Search bar — Timeline only
+                  if (_showTimeline) ...[
+                    const SizedBox(height: 16),
+                    _SearchBar(
+                      onChanged: (q) => setState(() => _searchQuery = q),
+                    ),
+                    const SizedBox(height: 12),
+                    _EmotionFilters(
+                      emotions: _emotions,
+                      emotionColors: _emotionColors,
+                      selected: _selectedEmotion,
+                      onSelect: (e) =>
+                          setState(() => _selectedEmotion = e),
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Expanded(
               child: _showTimeline
-                  ? const _TimelineView()
+                  ? _TimelineView(
+                      searchQuery: _searchQuery,
+                      emotionFilter: _selectedEmotion,
+                    )
                   : const _ArcsView(),
             ),
           ],
@@ -133,24 +97,265 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Timeline tab
-// ---------------------------------------------------------------------------
+// ── Search bar ────────────────────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final ValueChanged<String> onChanged;
+
+  const _SearchBar({required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.06),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 14),
+          Icon(Icons.search_rounded, color: Colors.white38, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              onChanged: onChanged,
+              style: GoogleFonts.dmSans(
+                  fontSize: 14, color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search your reflections...',
+                hintStyle: GoogleFonts.dmSans(
+                    fontSize: 14, color: Colors.white38),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Icon(Icons.tune_rounded,
+                  color: Colors.white38, size: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Emotion filter chips ──────────────────────────────────────────────────────
+
+class _EmotionFilters extends StatelessWidget {
+  final List<String> emotions;
+  final Map<String, Color> emotionColors;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  const _EmotionFilters({
+    required this.emotions,
+    required this.emotionColors,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: emotions.map((e) {
+          final isSelected = e == selected;
+          final color = emotionColors[e] ?? const Color(0xFF1ABC9C);
+          return GestureDetector(
+            onTap: () => onSelect(e),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? (e == 'All' ? const Color(0xFF1ABC9C) : color)
+                        .withOpacity(.2)
+                    : Colors.white.withOpacity(.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? (e == 'All'
+                              ? const Color(0xFF1ABC9C)
+                              : color)
+                          .withOpacity(.5)
+                      : Colors.white.withOpacity(.1),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (e != 'All') ...[
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    e,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected ? Colors.white : Colors.white60,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Tab toggle ────────────────────────────────────────────────────────────────
+
+class _TabToggle extends StatelessWidget {
+  final bool showTimeline;
+  final VoidCallback onTimeline;
+  final VoidCallback onArcs;
+
+  const _TabToggle({
+    required this.showTimeline,
+    required this.onTimeline,
+    required this.onArcs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.06),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          _TabItem(
+            label: 'Timeline',
+            icon: Icons.access_time_rounded,
+            selected: showTimeline,
+            onTap: onTimeline,
+          ),
+          _TabItem(
+            label: 'Arcs',
+            icon: Icons.folder_outlined,
+            selected: !showTimeline,
+            onTap: onArcs,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TabItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: selected
+                ? const LinearGradient(
+                    colors: [Color(0xFFA78BFA), Color(0xFF7DD3FC)],
+                  )
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 16,
+                  color: selected ? Colors.white : Colors.white54),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  color: selected ? Colors.white : Colors.white54,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────────
 
 class _TimelineView extends ConsumerWidget {
-  const _TimelineView();
+  final String searchQuery;
+  final String emotionFilter;
+
+  const _TimelineView({
+    required this.searchQuery,
+    required this.emotionFilter,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(historyTimelineProvider);
     return async.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white54),
+        child: CircularProgressIndicator(color: Colors.white30),
       ),
       error: (_, __) => const _EmptyTimelineView(),
-      data: (reflections) => reflections.isEmpty
-          ? const _EmptyTimelineView()
-          : _TimelineList(reflections: reflections),
+      data: (reflections) {
+        // Emotion filter: no emotion data in DB yet → non-All selections yield 0 results
+        if (emotionFilter != 'All') {
+          return _EmptyFilterView(emotion: emotionFilter);
+        }
+
+        // Apply search filter
+        var filtered = reflections;
+        if (searchQuery.isNotEmpty) {
+          final q = searchQuery.toLowerCase();
+          filtered = reflections.where((r) {
+            return r.title.toLowerCase().contains(q) ||
+                r.summary.toLowerCase().contains(q) ||
+                (r.arcName?.toLowerCase().contains(q) ?? false);
+          }).toList();
+        }
+        return filtered.isEmpty
+            ? const _EmptyTimelineView()
+            : _TimelineList(reflections: filtered);
+      },
     );
   }
 }
@@ -160,13 +365,79 @@ class _TimelineList extends StatelessWidget {
 
   const _TimelineList({required this.reflections});
 
+  List<(DateTime date, List<HistoryReflectionModel> items)> _group(
+    List<HistoryReflectionModel> items,
+  ) {
+    final Map<DateTime, List<HistoryReflectionModel>> map = {};
+    for (final r in items) {
+      final d = DateTime(r.createdAt.year, r.createdAt.month, r.createdAt.day);
+      map.putIfAbsent(d, () => []).add(r);
+    }
+    final sorted = map.keys.toList()..sort((a, b) => b.compareTo(a));
+    return sorted.map((d) => (d, map[d]!)).toList();
+  }
+
+  String _monthDay(DateTime d) {
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    ];
+    return '${months[d.month - 1]} ${d.day}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-      itemCount: reflections.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _TimelineTile(reflection: reflections[i]),
+    final groups = _group(reflections);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+      itemCount: groups.length,
+      itemBuilder: (_, gi) {
+        final (date, items) = groups[gi];
+        String label;
+        if (date == today) {
+          label =
+              'TODAY, ${_monthDay(date)} · ${items.length} ${items.length == 1 ? 'SESSION' : 'SESSIONS'}';
+        } else if (date == yesterday) {
+          label = 'YESTERDAY, ${_monthDay(date)}';
+        } else {
+          label = _monthDay(date);
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (gi > 0) const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF9B59B6),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white38,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...items.map((r) => _TimelineTile(reflection: r)),
+          ],
+        );
+      },
     );
   }
 }
@@ -176,61 +447,224 @@ class _TimelineTile extends StatelessWidget {
 
   const _TimelineTile({required this.reflection});
 
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}';
+  String _time(DateTime dt) {
+    final h = dt.hour;
+    final m = dt.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour = h % 12 == 0 ? 12 : h % 12;
+    return '$hour:$m $period';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(.07)),
+    final hasArc =
+        reflection.arcName != null && reflection.arcName!.isNotEmpty;
+    final chipColor =
+        hasArc ? arcColor(reflection.arcId) : const Color(0xFF555580);
+
+    return GestureDetector(
+      onTap: () =>
+          context.push('${AppRoutes.sessionDetail}/${reflection.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.05),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withOpacity(.07)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              child: Row(
+                children: [
+                  if (hasArc)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: chipColor.withOpacity(.18),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: chipColor.withOpacity(.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.folder_outlined,
+                              size: 11, color: chipColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            reflection.arcName!.toUpperCase(),
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: chipColor,
+                              letterSpacing: 0.9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Spacer(),
+                  Text(
+                    _time(reflection.createdAt),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: Colors.white38,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: hasArc
+                  ? RichText(
+                      text: TextSpan(
+                        children:
+                            _buildArcNameSpans(reflection.arcName!, chipColor),
+                      ),
+                    )
+                  : Text(
+                      reflection.title.isNotEmpty
+                          ? reflection.title
+                          : reflection.summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.3,
+                      ),
+                    ),
+            ),
+            if (reflection.summary.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                child: Text(
+                  '"${reflection.summary}"',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    color: Colors.white54,
+                    height: 1.5,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9B59B6).withOpacity(.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF9B59B6).withOpacity(.22),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lightbulb_outline_rounded,
+                          size: 13, color: Color(0xFF9B59B6)),
+                      const SizedBox(width: 5),
+                      Text(
+                        'View Reflection',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF9B59B6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _formatDate(reflection.createdAt),
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              color: Colors.white38,
-              letterSpacing: 1.1,
-            ),
+    );
+  }
+
+  List<TextSpan> _buildArcNameSpans(String name, Color accentColor) {
+    final words = name.split(' ');
+    if (words.length <= 1) {
+      return [
+        TextSpan(
+          text: name,
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.3,
           ),
-          if (reflection.title.isNotEmpty) ...[
-            const SizedBox(height: 6),
+        ),
+      ];
+    }
+    return [
+      TextSpan(
+        text: '${words.first} ',
+        style: GoogleFonts.dmSans(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          height: 1.3,
+        ),
+      ),
+      TextSpan(
+        text: words.skip(1).join(' '),
+        style: GoogleFonts.dmSans(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: accentColor.withOpacity(.72),
+          height: 1.3,
+        ),
+      ),
+    ];
+  }
+}
+
+class _EmptyFilterView extends StatelessWidget {
+  final String emotion;
+
+  const _EmptyFilterView({required this.emotion});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sentiment_neutral_rounded,
+                size: 56, color: Colors.white.withOpacity(.2)),
+            const SizedBox(height: 16),
             Text(
-              reflection.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              'No $emotion sessions yet',
               style: GoogleFonts.dmSans(
-                fontSize: 14,
                 color: Colors.white,
-                height: 1.4,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-          if (reflection.summary.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              reflection.summary,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                color: Colors.white54,
-                height: 1.4,
-              ),
+              'Emotion tracking will surface here as you reflect.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(color: Colors.white38, fontSize: 13),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -247,11 +681,12 @@ class _EmptyTimelineView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history, size: 72, color: Colors.white.withOpacity(.4)),
+            Icon(Icons.history_rounded,
+                size: 64, color: Colors.white.withOpacity(.2)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No reflections yet',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -261,7 +696,8 @@ class _EmptyTimelineView extends StatelessWidget {
             Text(
               'Your completed sessions will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(.7)),
+              style: GoogleFonts.dmSans(
+                  color: Colors.white54, fontSize: 14),
             ),
           ],
         ),
@@ -270,110 +706,216 @@ class _EmptyTimelineView extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Arcs tab
-// ---------------------------------------------------------------------------
+// ── Arcs grid ─────────────────────────────────────────────────────────────────
 
-class _ArcsView extends ConsumerWidget {
+class _ArcsView extends ConsumerStatefulWidget {
   const _ArcsView();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ArcsView> createState() => _ArcsViewState();
+}
+
+class _ArcsViewState extends ConsumerState<_ArcsView> {
+  bool _archivedExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final activeAsync = ref.watch(historyActiveArcsProvider);
     final archivedAsync = ref.watch(historyArchivedArcsProvider);
 
     return activeAsync.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white54),
+        child: CircularProgressIndicator(color: Colors.white30),
       ),
       error: (_, __) => const _EmptyArcView(),
       data: (active) {
         final archived = archivedAsync.valueOrNull ?? [];
         if (active.isEmpty && archived.isEmpty) return const _EmptyArcView();
-        return _ArcsList(active: active, archived: archived);
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+          children: [
+            if (active.isNotEmpty) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ACTIVE THREADS',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white38,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      Text(
+                        '${active.length} ongoing ${active.length == 1 ? 'arc' : 'arcs'}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Organize button
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.06),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(.1)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.grid_view_rounded,
+                            size: 14, color: Colors.white54),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Organize',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: active.length,
+                itemBuilder: (_, i) => _ArcGridCell(arc: active[i]),
+              ),
+            ],
+            if (archived.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              GestureDetector(
+                onTap: () => setState(
+                    () => _archivedExpanded = !_archivedExpanded),
+                child: Row(
+                  children: [
+                    Icon(Icons.archive_outlined,
+                        size: 14, color: Colors.white38),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ARCHIVED CHAPTERS · ${archived.length}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white38,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _archivedExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: Colors.white38,
+                    ),
+                  ],
+                ),
+              ),
+              if (_archivedExpanded) ...[
+                const SizedBox(height: 14),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: archived.length,
+                  itemBuilder: (_, i) =>
+                      _ArcGridCell(arc: archived[i], muted: true),
+                ),
+              ],
+            ],
+          ],
+        );
       },
     );
   }
 }
 
-class _ArcsList extends StatelessWidget {
-  final List<HistoryArcModel> active;
-  final List<HistoryArcModel> archived;
-
-  const _ArcsList({required this.active, required this.archived});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-      children: [
-        if (active.isNotEmpty) ...[
-          _SectionLabel(label: 'ACTIVE'),
-          const SizedBox(height: 12),
-          ...active.map((arc) => _ArcTile(arc: arc)),
-        ],
-        if (archived.isNotEmpty) ...[
-          if (active.isNotEmpty) const SizedBox(height: 24),
-          _SectionLabel(label: 'ARCHIVED'),
-          const SizedBox(height: 12),
-          ...archived.map((arc) => _ArcTile(arc: arc)),
-        ],
-      ],
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: GoogleFonts.dmSans(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: Colors.white38,
-        letterSpacing: 1.4,
-      ),
-    );
-  }
-}
-
-class _ArcTile extends StatelessWidget {
+class _ArcGridCell extends StatelessWidget {
   final HistoryArcModel arc;
+  final bool muted;
 
-  const _ArcTile({required this.arc});
+  const _ArcGridCell({required this.arc, this.muted = false});
 
   @override
   Widget build(BuildContext context) {
+    final img = arcImageAsset(arc.id);
+    final color = arcColor(arc.id);
+
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.arcDetail}/${arc.id}'),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(.05),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white.withOpacity(.04),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(.07)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
+              child: Center(
+                child: Opacity(
+                  opacity: muted ? 0.5 : 1.0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(
+                      img,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.folder_rounded,
+                        size: 64,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     arc.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: muted ? Colors.white54 : Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     '${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'}',
                     style: GoogleFonts.dmSans(
@@ -384,7 +926,6 @@ class _ArcTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white24),
           ],
         ),
       ),
@@ -403,12 +944,12 @@ class _EmptyArcView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_outlined,
-                size: 72, color: Colors.white.withOpacity(.4)),
+            Icon(Icons.folder_open_rounded,
+                size: 64, color: Colors.white.withOpacity(.2)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No arcs yet',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -416,9 +957,10 @@ class _EmptyArcView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Arcs will be generated automatically as patterns emerge.',
+              'Arcs emerge automatically as you reflect.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(.7)),
+              style: GoogleFonts.dmSans(
+                  color: Colors.white54, fontSize: 14),
             ),
           ],
         ),

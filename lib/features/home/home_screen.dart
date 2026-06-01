@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/providers/arc_providers.dart';
 import '../../data/repositories/arc_repository.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../shared/utils/arc_color.dart';
 import '../../shared/widgets/app_background.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -17,26 +18,20 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-
     final profileAsync = ref.watch(_profileProvider(userId));
 
     return AppBackground(
       child: SafeArea(
         child: profileAsync.when(
           loading: () => const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.orbLavender,
-            ),
+            child: CircularProgressIndicator(color: AppColors.orbLavender),
           ),
           error: (_, __) => const Center(
-            child: Text(
-              'Something went wrong.',
-              style: TextStyle(color: Colors.white54),
-            ),
+            child: Text('Something went wrong.',
+                style: TextStyle(color: Colors.white54)),
           ),
-          data: (profile) => _HomeBody(
-            displayName: profile?.displayName ?? 'there',
-          ),
+          data: (profile) =>
+              _HomeBody(displayName: profile?.displayName ?? 'there'),
         ),
       ),
     );
@@ -64,17 +59,14 @@ class _HomeBody extends ConsumerWidget {
 
   String get _dateLabel {
     final now = DateTime.now();
-
     const days = [
       'Monday', 'Tuesday', 'Wednesday', 'Thursday',
       'Friday', 'Saturday', 'Sunday',
     ];
-
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
     ];
-
     return '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}'
         .toUpperCase();
   }
@@ -189,7 +181,39 @@ class _ArcGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cellSize = (MediaQuery.of(context).size.width - 48 - 12) / 2;
+    if (arcs.isEmpty) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(.04),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(.07)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.white38, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your arcs will appear here after your first session.',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: Colors.white38,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Center(child: _NewThreadCell()),
+        ],
+      );
+    }
 
     return GridView.count(
       crossAxisCount: 2,
@@ -200,7 +224,7 @@ class _ArcGrid extends StatelessWidget {
       childAspectRatio: .82,
       children: [
         ...arcs.map((arc) => _ArcCard(arc: arc)),
-        _NewThreadCell(size: cellSize),
+        const _NewThreadCell(),
       ],
     );
   }
@@ -213,51 +237,61 @@ class _ArcCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final img = arcImageAsset(arc.id);
+    final color = arcColor(arc.id);
+
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.arcDetail}/${arc.id}'),
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(.06),
+          color: Colors.white.withOpacity(.05),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.orbLavender.withOpacity(.2),
-          ),
+          border: Border.all(color: color.withOpacity(.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.orbLavender.withOpacity(.15),
-              ),
-              child: const Icon(
-                Icons.auto_awesome,
-                color: AppColors.orbLavender,
-                size: 18,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              arc.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                height: 1.3,
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                  child: Image.asset(
+                    img,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.folder_rounded,
+                      size: 56,
+                      color: color,
+                    ),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'}',
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                color: AppColors.textSubtle,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    arc.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'}',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: AppColors.textSubtle,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -268,9 +302,7 @@ class _ArcCard extends StatelessWidget {
 }
 
 class _NewThreadCell extends StatelessWidget {
-  final double size;
-
-  const _NewThreadCell({required this.size});
+  const _NewThreadCell();
 
   @override
   Widget build(BuildContext context) {
@@ -280,22 +312,15 @@ class _NewThreadCell extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: size * .72,
-            height: size * .72,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white24,
-                width: 1.5,
-                strokeAlign: BorderSide.strokeAlignInside,
-              ),
+              border: Border.all(color: Colors.white24, width: 1.5),
               color: Colors.white.withOpacity(.04),
             ),
-            child: const Icon(
-              Icons.add_rounded,
-              color: Colors.white38,
-              size: 32,
-            ),
+            child: const Icon(Icons.add_rounded,
+                color: Colors.white38, size: 32),
           ),
           const SizedBox(height: 12),
           Text(

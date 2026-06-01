@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AnalysisHeader extends StatelessWidget {
   const AnalysisHeader({super.key});
@@ -10,12 +11,20 @@ class AnalysisHeader extends StatelessWidget {
       children: [
         Text(
           'Analysis',
-          style: Theme.of(context).textTheme.displayLarge,
+          style: GoogleFonts.dmSans(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.05,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
-          'Patterns across your arcs.',
-          style: Theme.of(context).textTheme.bodyLarge,
+          'Patterns across all of your arcs.',
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            color: Colors.white54,
+          ),
         ),
       ],
     );

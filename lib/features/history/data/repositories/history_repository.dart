@@ -43,11 +43,13 @@ class HistoryRepository {
 
     final result = await client
         .from('reflections')
-        .select()
+        .select('*, arcs(id, name)')
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
 
-    return (result as List).map((e) => HistoryReflectionModel.fromJson(e)).toList();
+    return (result as List)
+        .map((e) => HistoryReflectionModel.fromJson(e))
+        .toList();
   }
 
   Future<HistoryArcModel?> getArc(String id) async {
@@ -63,7 +65,7 @@ class HistoryRepository {
   Future<HistoryReflectionModel?> getSession(String id) async {
     final result = await client
         .from('reflections')
-        .select()
+        .select('*, arcs(id, name)')
         .eq('id', id)
         .maybeSingle();
     if (result == null) return null;
