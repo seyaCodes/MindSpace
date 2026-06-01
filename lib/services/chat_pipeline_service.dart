@@ -52,9 +52,8 @@ class ChatPipelineService {
           'id=${arcResult.arcId} isNew=${arcResult.isNew} name=${arcResult.arcName}');
 
       // Increment session count on the assigned arc.
-      await _arcRepository.incrementSessionCount(arcResult.arcId);
-      debugPrint('[Pipeline] session count incremented for arc=${arcResult.arcId}');
-
+      
+      
       debugPrint('[Pipeline] ── wrapUpSession complete ──');
     } on Exception catch (e, st) {
       // Arc assignment is a best-effort operation.

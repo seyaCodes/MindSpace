@@ -25,10 +25,12 @@ Below are reflections from multiple journaling sessions for the arc titled "${ar
 
 ${entries}
 
-Synthesize these sessions into an arc insight. Return ONLY valid JSON:
+Synthesize these sessions into an arc insight. Return ONLY valid JSON with no extra text:
 {
   "how_it_evolved": "2-4 sentences describing how the user's emotional journey evolved across these sessions",
-  "pattern_noticed": "1-3 sentences identifying a recurring theme, pattern, or growth area"
+  "pattern_noticed": "1-3 sentences identifying a recurring theme, pattern, or growth area",
+  "turning_point": "A single short sentence or phrase (ideally echoing the user's own words) that marks the moment something shifted",
+  "turning_point_context": "1-2 sentences explaining why that moment mattered and what it opened up"
 }`;
 }
 
@@ -47,7 +49,6 @@ Deno.serve(async (req: Request) => {
       return errorResponse("arc_id is required", 400);
     }
 
-    // Verify arc ownership
     const { data: arc, error: arcErr } = await admin
       .from("arcs")
       .select("id, user_id, name, session_count")
@@ -57,20 +58,52 @@ Deno.serve(async (req: Request) => {
 
     if (arcErr || !arc) return errorResponse("Arc not found", 404);
 
-    // Fetch all reflections for this arc, ordered chronologically
-    const { data: reflections, error: refErr } = await admin
+    // Primary: reflections with arc_id set directly
+    const { data: directReflections, error: refErr } = await admin
       .from("reflections")
-      .select(
-        "id, what_sage_heard, question_to_sit_with, shared_perspective, created_at",
-      )
+      .select("id, what_sage_heard, question_to_sit_with, shared_perspective, created_at")
       .eq("arc_id", arcId)
       .order("created_at", { ascending: true });
 
     if (refErr) throw new Error(refErr.message);
 
-    if (!reflections || reflections.length < MIN_REFLECTIONS) {
+    let reflections = directReflections ?? [];
+    console.log(`[generate-arc-insight] direct reflections: ${reflections.length}`);
+
+    // Fallback: reflections linked via chats.arc_id (catches sessions where reflection.arc_id wasn't set)
+    if (reflections.length < MIN_REFLECTIONS) {
+      console.log(`[generate-arc-insight] fewer than ${MIN_REFLECTIONS} direct — trying chats fallback`);
+      const { data: chatLinks } = await admin
+        .from("chats")
+        .select("id")
+        .eq("arc_id", arcId);
+
+      if (chatLinks && chatLinks.length > 0) {
+        const chatIds = chatLinks.map((c: { id: string }) => c.id);
+        const { data: viaChats } = await admin
+          .from("reflections")
+          .select("id, what_sage_heard, question_to_sit_with, shared_perspective, created_at")
+          .in("chat_id", chatIds)
+          .order("created_at", { ascending: true });
+
+        if (viaChats) {
+          const seen = new Set(reflections.map((r: { id: string }) => r.id));
+          for (const r of viaChats) {
+            if (!seen.has(r.id)) {
+              reflections.push(r);
+              seen.add(r.id);
+              // Backfill arc_id so future queries find it directly
+              await admin.from("reflections").update({ arc_id: arcId }).eq("id", r.id);
+            }
+          }
+        }
+      }
+      console.log(`[generate-arc-insight] after fallback: ${reflections.length} reflections`);
+    }
+
+    if (reflections.length < MIN_REFLECTIONS) {
       return errorResponse(
-        `Need at least ${MIN_REFLECTIONS} sessions to generate an arc insight (have ${reflections?.length ?? 0})`,
+        `Need at least ${MIN_REFLECTIONS} sessions to generate an arc insight (have ${reflections.length})`,
         422,
       );
     }
@@ -78,7 +111,7 @@ Deno.serve(async (req: Request) => {
     const groq = createGroqClient();
     const raw = await groq.chat(
       [{ role: "user", content: buildInsightPrompt(arc.name, reflections as Reflection[]) }],
-      { model: "llama-3.3-70b-versatile", temperature: 0.65, max_tokens: 600 },
+      { model: "llama-3.3-70b-versatile", temperature: 0.65, max_tokens: 800 },
     );
 
     let insight: ArcInsightResult;
@@ -93,7 +126,6 @@ Deno.serve(async (req: Request) => {
       throw new Error("LLM arc insight is missing required fields");
     }
 
-    // Persist to arc_insights
     const { data: saved, error: saveErr } = await admin
       .from("arc_insights")
       .insert({
@@ -101,6 +133,8 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         how_it_evolved: insight.how_it_evolved,
         pattern_noticed: insight.pattern_noticed,
+        turning_point: insight.turning_point ?? null,
+        turning_point_context: insight.turning_point_context ?? null,
         session_count_at_generation: arc.session_count,
       })
       .select()

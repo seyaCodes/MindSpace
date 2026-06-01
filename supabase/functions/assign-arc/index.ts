@@ -13,7 +13,7 @@ import {
 } from "../_shared/embedding_client.ts";
 import type { Arc, Reflection, AssignArcResult } from "../_shared/types.ts";
 
-const SIMILARITY_THRESHOLD = 0.82; // ✅ CHANGED: Raised from 0.72 to 0.82 for stricter matching
+const SIMILARITY_THRESHOLD = 0.82;
 
 async function generateArcName(
   reflection: Pick<Reflection, "what_sage_heard" | "shared_perspective">,
@@ -117,24 +117,32 @@ Deno.serve(async (req: Request) => {
       console.log(`[assign-arc][3] DEBUG what_sage_heard: "${reflection.what_sage_heard}"`);
       console.log(`[assign-arc][3] DEBUG arc_topic result: "${arcTopic}"`);
     }
-    console.log(`[assign-arc][3] embedding source: "${arcTopic}"`);
+
+    // ✅ FIX: embed arcTopic (factual life situation) instead of therapeutic text
+    // This prevents emotionally similar but topically different conversations
+    // (e.g. "graduation excitement" vs "job loss anxiety") from clustering together.
+    const embeddingSource = arcTopic;
+
+    console.log(`[assign-arc][3] embedding source (arc_topic): "${embeddingSource}"`);
 
     const existingVec = parseVector(reflection.embedding);
     let embedding: number[];
 
-    // Only reuse the stored embedding when arc_topic was already persisted —
-    // that guarantees the stored vector was produced from the same source text.
+    // Only reuse embedding if arc_topic already existed AND embedding exists
     if (existingVec && existingVec.length > 0 && reflection.arc_topic) {
       embedding = existingVec;
       console.log(`[assign-arc][3] reusing existing embedding, dims: ${embedding.length}`);
     } else {
-      embedding = await generateEmbedding(arcTopic);
+      embedding = await generateEmbedding(embeddingSource);
       console.log(`[assign-arc][3] generateEmbedding SUCCESS, dims: ${embedding.length}`);
 
       // ── STEP 4: Persist arc_topic + embedding ─────────────────────────
       console.log("[assign-arc][4] writing arc_topic + embedding to reflection:", reflection.id);
+
       const updates: Record<string, unknown> = { embedding };
-      if (!reflection.arc_topic) updates.arc_topic = arcTopic;
+      if (!reflection.arc_topic) {
+        updates.arc_topic = arcTopic;
+      }
 
       const { error: embErr } = await admin
         .from("reflections")
@@ -178,6 +186,7 @@ Deno.serve(async (req: Request) => {
       );
       if (sim > bestSim) { bestSim = sim; bestArc = arc; }
     }
+
     if (bestArc) {
       const decision = bestSim >= SIMILARITY_THRESHOLD ? "ASSIGN to existing" : "BELOW threshold → new arc";
       console.log(
@@ -203,14 +212,14 @@ Deno.serve(async (req: Request) => {
       );
 
       const newCentroid = updateCentroid(parseVector(bestArc.centroid), bestArc.session_count, embedding);
-      // ✅ FIX: Also increment session_count when updating centroid
       const { error: centErr } = await admin
         .from("arcs")
-        .update({ 
+        .update({
           centroid: newCentroid,
-          session_count: bestArc.session_count + 1
+          session_count: bestArc.session_count + 1,
         })
         .eq("id", arcId);
+
       if (centErr) {
         console.error("[assign-arc][7] centroid/session_count update FAILED:", centErr.message, centErr.code);
       } else {
@@ -229,7 +238,7 @@ Deno.serve(async (req: Request) => {
           user_id: userId,
           name: arcName,
           status: "active",
-          session_count: 1, // ✅ FIX: Changed from 0 to 1
+          session_count: 1,
           user_renamed: false,
           centroid: embedding,
         })

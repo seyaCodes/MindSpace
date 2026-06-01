@@ -10,7 +10,7 @@ class ReflectionModel {
   final String whatSageHeard;
   final String questionToSitWith;
   final String? sharedPerspective;
-  final String? sessionTone;
+  final String sessionTone;
   final DateTime createdAt;
 
   const ReflectionModel({
@@ -22,7 +22,7 @@ class ReflectionModel {
     required this.whatSageHeard,
     required this.questionToSitWith,
     this.sharedPerspective,
-    this.sessionTone,
+    required this.sessionTone,
     required this.createdAt,
   });
 
@@ -36,7 +36,7 @@ class ReflectionModel {
       whatSageHeard: (json['what_sage_heard'] as String?) ?? '',
       questionToSitWith: (json['question_to_sit_with'] as String?) ?? '',
       sharedPerspective: json['shared_perspective'] as String?,
-      sessionTone: json['session_tone'] as String?,
+      sessionTone: (json['session_tone'] as String?) ?? '',
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

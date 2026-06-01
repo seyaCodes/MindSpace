@@ -57,6 +57,8 @@ export interface ArcInsight {
   user_id: string;
   how_it_evolved: string;
   pattern_noticed: string;
+  turning_point: string | null;
+  turning_point_context: string | null;
   session_count_at_generation: number;
   generated_at: string;
 }
@@ -77,6 +79,8 @@ export interface ReflectionResult {
 export interface ArcInsightResult {
   how_it_evolved: string;
   pattern_noticed: string;
+  turning_point?: string;
+  turning_point_context?: string;
 }
 
 export interface AssignArcResult {

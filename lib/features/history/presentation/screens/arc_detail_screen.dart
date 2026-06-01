@@ -12,18 +12,18 @@ import '../../domain/entities/history_arc.dart';
 // ── Providers ─────────────────────────────────────────────────────────────────
 
 final _arcDetailProvider =
-    FutureProvider.family<HistoryArc?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<HistoryArc?, String>((ref, id) async {
   return ref.read(historyRepositoryProvider).getArc(id);
 });
 
 final _arcReflectionsProvider =
-    FutureProvider.family<List<ReflectionModel>, String>((ref, arcId) async {
+    FutureProvider.autoDispose.family<List<ReflectionModel>, String>((ref, arcId) async {
   return ref.read(reflectionRepositoryProvider).getReflectionsByArc(arcId);
 });
 
 final _arcInsightsProvider =
-    FutureProvider.family<List<dynamic>, String>((ref, arcId) async {
-  return ref.read(arcRepositoryProvider).getInsights(arcId);
+    FutureProvider.autoDispose.family<List<dynamic>, String>((ref, arcId) async {
+  return ref.read(arcRepositoryProvider).getExistingInsights(arcId);
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -793,7 +793,7 @@ class _SessionCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                if (tone != null)
+if (tone.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),

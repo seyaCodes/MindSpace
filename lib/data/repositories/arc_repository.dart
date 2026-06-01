@@ -54,7 +54,9 @@ class ArcRepository {
         .eq('status', 'active')
         .order('last_session_at', ascending: false);
 
-    return (result as List).map((e) => ArcModel.fromJson(e)).toList();
+    return (result as List)
+        .map((e) => ArcModel.fromJson(e))
+        .toList();
   }
 
   Future<ArcModel?> getArc(String id) async {
@@ -63,6 +65,7 @@ class ArcRepository {
         .select()
         .eq('id', id)
         .maybeSingle();
+
     if (result == null) return null;
     return ArcModel.fromJson(result);
   }
@@ -85,38 +88,126 @@ class ArcRepository {
     required String userId,
     required String name,
   }) async {
-    final result = await _client.from('arcs').insert({
-      'user_id': userId,
-      'name': name,
-      'status': 'active',
-      'session_count': 0,
-      'user_renamed': false,
-    }).select().single();
+    final result = await _client
+        .from('arcs')
+        .insert({
+          'user_id': userId,
+          'name': name,
+          'status': 'active',
+          'session_count': 0,
+          'user_renamed': false,
+        })
+        .select()
+        .single();
+
     return ArcModel.fromJson(result);
   }
 
+  // ─────────────────────────────────────────────
+  // GENERATE ARC INSIGHT (DEBUG VERSION)
+  // ─────────────────────────────────────────────
+
+  Future<void> generateInsight(String arcId) async {
+    print('[ARC] calling generate-arc-insight for $arcId');
+
+    try {
+      final res = await _client.functions.invoke(
+        'generate-arc-insight',
+        body: {'arc_id': arcId},
+      );
+
+      print('[ARC] status: ${res.status}');
+      print('[ARC] data: ${res.data}');
+
+      if (res.status != 200) {
+        throw Exception(
+          'generate-arc-insight failed '
+          'status=${res.status} '
+          'data=${res.data}',
+        );
+      }
+    } catch (e, st) {
+      print('[ARC] invoke ERROR: $e');
+      print(st);
+      rethrow;
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // GET INSIGHTS
+  // ─────────────────────────────────────────────
+
+  // Only reads — never triggers generation. Use this everywhere except the analysis screen.
+  Future<List<dynamic>> getExistingInsights(String arcId) async {
+    print('[ARC] getExistingInsights for $arcId');
+    try {
+      final result = await _client
+          .from('arc_insights')
+          .select()
+          .eq('arc_id', arcId)
+          .order('generated_at', ascending: false)
+          .timeout(const Duration(seconds: 15));
+      print('[ARC] getExistingInsights found: ${(result as List).length}');
+      return result;
+    } catch (e) {
+      print('[ARC] getExistingInsights ERROR: $e');
+      return [];
+    }
+  }
+
+  // Reads existing insights; if none found, triggers generation. Only call from analysis screen.
   Future<List<dynamic>> getInsights(String arcId) async {
-    return await _client
-        .from('arc_insights')
-        .select()
-        .eq('arc_id', arcId)
-        .order('generated_at', ascending: false);
+    print('[ARC] getInsights start for $arcId');
+
+    final List<dynamic> existing;
+    try {
+      existing = await _client
+          .from('arc_insights')
+          .select()
+          .eq('arc_id', arcId)
+          .order('generated_at', ascending: false)
+          .timeout(const Duration(seconds: 15));
+      print('[ARC] existing query returned ${existing.length} rows');
+    } catch (e) {
+      print('[ARC] arc_insights SELECT ERROR: $e');
+      rethrow;
+    }
+
+    if (existing.isNotEmpty) {
+      print('[ARC] returning ${existing.length} existing insights');
+      return existing;
+    }
+
+    print('[ARC] no insights → calling generate-arc-insight');
+    await generateInsight(arcId);
+    print('[ARC] generation call returned OK');
+
+    try {
+      final fresh = await _client
+          .from('arc_insights')
+          .select()
+          .eq('arc_id', arcId)
+          .order('generated_at', ascending: false)
+          .timeout(const Duration(seconds: 15));
+      print('[ARC] fresh insights count: ${(fresh as List).length}');
+      return fresh;
+    } catch (e) {
+      print('[ARC] fresh SELECT ERROR after generation: $e');
+      rethrow;
+    }
   }
 
   Future<void> incrementSessionCount(String arcId) async {
     final arc = await getArc(arcId);
-
     if (arc == null) {
       throw Exception('Arc not found: $arcId');
     }
 
-    await _client
-        .from('arcs')
-        .update({
-          'session_count': arc.sessionCount + 1,
-          'last_session_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', arcId);
+    await _client.from('arcs').update({
+      'session_count': arc.sessionCount + 1,
+      'last_session_at':
+          DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', arcId);
   }
 
   Future<void> deleteArc(String id) async {

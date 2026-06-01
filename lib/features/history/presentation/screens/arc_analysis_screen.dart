@@ -8,12 +8,12 @@ import '../../data/repositories/history_repository.dart';
 import '../../domain/entities/history_arc.dart';
 
 final _arcAnalysisArcProvider =
-    FutureProvider.family<HistoryArc?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<HistoryArc?, String>((ref, id) async {
   return ref.read(historyRepositoryProvider).getArc(id);
 });
 
 final _arcAnalysisInsightsProvider =
-    FutureProvider.family<List<dynamic>, String>((ref, arcId) async {
+    FutureProvider.autoDispose.family<List<dynamic>, String>((ref, arcId) async {
   return ref.read(arcRepositoryProvider).getInsights(arcId);
 });
 
@@ -42,21 +42,22 @@ class ArcAnalysisScreen extends ConsumerWidget {
               ? const Center(
                   child: Text('Arc not found.',
                       style: TextStyle(color: Colors.white54)))
-              : _AnalysisBody(arc: arc, insightsAsync: insightsAsync),
+              : _AnalysisBody(arcId: arcId, arc: arc, insightsAsync: insightsAsync),
         ),
       ),
     );
   }
 }
 
-class _AnalysisBody extends StatelessWidget {
+class _AnalysisBody extends ConsumerWidget {
+  final String arcId;
   final HistoryArc arc;
   final AsyncValue<List<dynamic>> insightsAsync;
 
-  const _AnalysisBody({required this.arc, required this.insightsAsync});
+  const _AnalysisBody({required this.arcId, required this.arc, required this.insightsAsync});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = arcColor(arc.id);
 
     return CustomScrollView(
@@ -137,11 +138,11 @@ class _AnalysisBody extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 insightsAsync.when(
-                  loading: () => const Center(
-                    child:
-                        CircularProgressIndicator(color: Colors.white30),
+                  loading: () => const _GeneratingCard(),
+                  error: (err, __) => _ErrorCard(
+                    error: err.toString(),
+                    onRetry: () => ref.invalidate(_arcAnalysisInsightsProvider(arcId)),
                   ),
-                  error: (_, __) => _NoInsightsCard(sessionCount: arc.sessionCount),
                   data: (insights) {
                     if (insights.isEmpty) {
                       return _NoInsightsCard(sessionCount: arc.sessionCount);
@@ -395,6 +396,93 @@ class _StatBox extends StatelessWidget {
             ),
           ],
         ),
+    );
+  }
+}
+
+class _GeneratingCard extends StatelessWidget {
+  const _GeneratingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+      ),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(color: Colors.white30, strokeWidth: 2),
+          const SizedBox(height: 16),
+          Text(
+            'Analysis is being generated…',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(fontSize: 15, color: Colors.white54, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final VoidCallback onRetry;
+  final String? error;
+
+  const _ErrorCard({required this.onRetry, this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 32, color: Colors.white.withOpacity(.3)),
+          const SizedBox(height: 12),
+          Text(
+            'Couldn\'t generate analysis.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(fontSize: 15, color: Colors.white54, height: 1.5),
+          ),
+          if (error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(fontSize: 11, color: Colors.white30, height: 1.4),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: onRetry,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFA970FF).withOpacity(.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFA970FF).withOpacity(.3)),
+              ),
+              child: Text(
+                'Retry',
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFA970FF),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
