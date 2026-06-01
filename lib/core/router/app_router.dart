@@ -92,7 +92,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/chat',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ChatScreen(),
+        builder: (context, state) => ChatScreen(
+          arcId: state.uri.queryParameters['arcId'],
+          arcName: state.uri.queryParameters['arcName'] != null
+              ? Uri.decodeComponent(state.uri.queryParameters['arcName']!)
+              : null,
+        ),
       ),
       GoRoute(
         path: '/wrap-up/:chatId',

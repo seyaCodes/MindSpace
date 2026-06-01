@@ -16,7 +16,10 @@ import '../widgets/chat_arc_banner.dart';
 import '../widgets/chat_input_bar.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  final String? arcId;
+  final String? arcName;
+
+  const ChatScreen({super.key, this.arcId, this.arcName});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -233,7 +236,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onBack: () => _handleBack(),
                   showWrapUp: showWrapUp,
                   onWrapUp: _wrapUpSession,
-                  arcName: null, // never show an arc name until wrap-up assigns one
+                  arcName: widget.arcName,
                 ),
                 if (_wrappingUp)
                   Container(
@@ -322,15 +325,21 @@ class _ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          TextButton.icon(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back, color: Colors.white70),
-            label: const Text(
-              '< Home',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+          GestureDetector(
+            onTap: onBack,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white70, size: 16),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Home',
+                    style: TextStyle(color: Colors.white70, fontSize: 15),
+                  ),
+                ],
               ),
             ),
           ),

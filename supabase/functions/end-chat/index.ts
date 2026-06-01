@@ -9,16 +9,23 @@ import type { Message, ReflectionResult } from "../_shared/types.ts";
 
 function buildReflectionPrompt(transcript: string): string {
   return `You are Sage, a compassionate AI companion in the MindSpace app.
-Read the conversation below and produce a post-session reflection in JSON.
+Read the conversation below and write a post-session reflection in JSON.
+
+RULES:
+- "what_sage_heard" must name the SPECIFIC life situation the user described (illness, graduation, moving abroad, etc.) — not just their emotions.
+  Use the user's own words and concrete details. Do NOT write generic phrases like "a challenging transition" or "finding inner strength".
+- "question_to_sit_with" must be specific to THIS session, not a universal question anyone could receive.
+- "shared_perspective" must stay grounded in what actually happened in this conversation.
+  Avoid projecting resilience, growth, or strength narratives unless the user themselves expressed those.
 
 CONVERSATION:
 ${transcript}
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 {
-  "what_sage_heard": "2-3 sentence empathetic summary of what the user shared, written from Sage's first-person perspective",
-  "question_to_sit_with": "One open-ended, gentle question for the user to reflect on",
-  "shared_perspective": "2-3 sentence warm, non-judgmental insight or perspective"
+  "what_sage_heard": "2-3 sentences naming the specific situation and what the user actually shared",
+  "question_to_sit_with": "One focused, open question tied to the specific details of this session",
+  "shared_perspective": "2-3 sentences of warm, grounded perspective rooted in what was said"
 }`;
 }
 

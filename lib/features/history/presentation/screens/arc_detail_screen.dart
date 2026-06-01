@@ -353,7 +353,7 @@ class _ArcDetailBodyState extends ConsumerState<_ArcDetailBody> {
                 // ── CTAs: Continue chatting + Open Analysis ─────
                 if (!_isArchived) ...[
                   GestureDetector(
-                    onTap: () => context.push('${AppRoutes.chat}?arcId=${_arc.id}'),
+                    onTap: () => context.push('${AppRoutes.chat}?arcId=${_arc.id}&arcName=${Uri.encodeComponent(_arc.name)}'),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

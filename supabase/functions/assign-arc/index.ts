@@ -17,21 +17,39 @@ const SIMILARITY_THRESHOLD = 0.82;
 
 async function generateArcName(
   reflection: Pick<Reflection, "what_sage_heard" | "shared_perspective">,
+  userMessages: string,
 ): Promise<string> {
   const groq = createGroqClient();
   const name = await groq.chat(
-    [{
-      role: "user",
-      content:
-        `Give a 3-5 word arc name for: "${reflection.what_sage_heard}" / "${reflection.shared_perspective}". Respond with ONLY the name.`,
-    }],
-    { model: "llama-3.1-8b-instant", temperature: 0.8, max_tokens: 20 },
+    [
+      {
+        role: "system",
+        content:
+          "Create a short 3-5 word title for a life chapter based on what someone shared in a journaling session.\n" +
+          "Rules:\n" +
+          "- Use plain, concrete language describing the actual situation\n" +
+          "- NO poetic or metaphorical phrases\n" +
+          "- BAD: 'Embracing Bittersweet Beginning', 'Reaching Through Isolation', 'Beyond Unemployment Hurdle'\n" +
+          "- GOOD: 'Graduation & Pregnancy News', 'Dealing With Job Loss', 'Sick & Missing Family'\n" +
+          "Respond with ONLY the title, nothing else.",
+      },
+      {
+        role: "user",
+        content:
+          "USER MESSAGES (what actually happened):\n" +
+          userMessages +
+          "\n\nSAGE SUMMARY (context only):\n" +
+          reflection.what_sage_heard,
+      },
+    ],
+    { model: "llama-3.1-8b-instant", temperature: 0.3, max_tokens: 20 },
   );
   return name.trim().replace(/^["']|["']$/g, "").slice(0, 60);
 }
 
 async function generateArcTopic(
   reflection: Pick<Reflection, "what_sage_heard" | "question_to_sit_with" | "shared_perspective">,
+  userMessages: string,
 ): Promise<string> {
   const groq = createGroqClient();
   const topic = await groq.chat(
@@ -39,17 +57,22 @@ async function generateArcTopic(
       {
         role: "system",
         content:
-          "Extract the SPECIFIC life situation from a therapeutic reflection. " +
+          "Extract the SPECIFIC life situation from a conversation. " +
+          "Prioritise what the user explicitly said over the therapist's summary. " +
           "Output exactly one sentence of at most 15 words. " +
           "Be SPECIFIC: include the exact context, relationship, or domain. " +
           "Examples: 'Job interview anxiety at tech company' NOT 'work anxiety'. " +
-          "'Breakup with long-term partner' NOT 'relationship issues'. " +
+          "'Graduating from university this year' NOT 'major life transition'. " +
+          "'Moving abroad for studies next month' NOT 'new life chapter'. " +
           "Focus only on the factual life situation — no emotions, no therapeutic language.",
       },
       {
         role: "user",
         content: [
-          "Extract the specific topic from this reflection:",
+          "USER MESSAGES (ground truth — use these first):",
+          userMessages,
+          "",
+          "SAGE SUMMARY (context only):",
           `what_sage_heard: "${reflection.what_sage_heard}"`,
           `question_to_sit_with: "${reflection.question_to_sit_with}"`,
           `shared_perspective: "${reflection.shared_perspective}"`,
@@ -104,18 +127,30 @@ Deno.serve(async (req: Request) => {
     console.log("[assign-arc][2] what_sage_heard length:", reflection.what_sage_heard?.length ?? 0);
     console.log("[assign-arc][2] existing embedding:", reflection.embedding === null ? "NULL" : "PRESENT");
 
-    // ── STEP 3: Generate arc topic + embedding ───────────────────────────
+    // ── STEP 3: Fetch raw user messages (used for arc topic + arc name) ────
+    console.log("[assign-arc][3] fetching raw user messages...");
+    const { data: rawMessages } = await admin
+      .from("messages")
+      .select("content")
+      .eq("chat_id", chatId)
+      .eq("role", "user")
+      .order("created_at", { ascending: true })
+      .limit(10);
+
+    const userMessages = (rawMessages ?? [])
+      .map((m: { content: string }) => `- ${m.content}`)
+      .join("\n");
+
+    // ── STEP 3b: Generate arc topic ──────────────────────────────────────
     let arcTopic: string;
 
     if (reflection.arc_topic) {
       arcTopic = reflection.arc_topic;
-      console.log(`[assign-arc][3] reusing existing arc_topic: "${arcTopic}"`);
+      console.log(`[assign-arc][3b] reusing existing arc_topic: "${arcTopic}"`);
     } else {
-      console.log("[assign-arc][3] generating arc_topic from reflection...");
-      arcTopic = await generateArcTopic(reflection);
-      console.log(`[assign-arc][3] generated arc_topic: "${arcTopic}"`);
-      console.log(`[assign-arc][3] DEBUG what_sage_heard: "${reflection.what_sage_heard}"`);
-      console.log(`[assign-arc][3] DEBUG arc_topic result: "${arcTopic}"`);
+      console.log("[assign-arc][3b] generating arc_topic from reflection + user messages...");
+      arcTopic = await generateArcTopic(reflection, userMessages);
+      console.log(`[assign-arc][3b] generated arc_topic: "${arcTopic}"`);
     }
 
     // ✅ FIX: embed arcTopic (factual life situation) instead of therapeutic text
@@ -229,7 +264,7 @@ Deno.serve(async (req: Request) => {
       console.log(
         `[assign-arc][7] DECISION: NEW ARC — bestSim=${bestSim.toFixed(4)} < threshold=${SIMILARITY_THRESHOLD}${bestArc ? ` (closest was id=${bestArc.id} name="${bestArc.name}")` : " (no candidates)"}`,
       );
-      arcName = await generateArcName(reflection);
+      arcName = await generateArcName(reflection, userMessages);
       console.log(`[assign-arc][7] generated arc name: "${arcName}"`);
 
       const { data: newArc, error: createErr } = await admin
