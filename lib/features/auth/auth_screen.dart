@@ -298,81 +298,15 @@ class _GoogleButton extends StatelessWidget {
   }
 }
 
-// Real Google glyph — painted manually, no asset needed
 class _GoogleGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Image.asset(
+      'assets/google.png',
       width: 22,
       height: 22,
-      child: CustomPaint(painter: _GoogleGlyphPainter()),
     );
   }
-}
-
-class _GoogleGlyphPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = size.width / 2;
-
-    // Blue arc (top-right)
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      -1.38,
-      2.76,
-      false,
-      Paint()
-        ..color = const Color(0xFF4285F4)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.18,
-    );
-    // Red arc (top-left)
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      -3.84,
-      1.57,
-      false,
-      Paint()
-        ..color = const Color(0xFFEA4335)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.18,
-    );
-    // Yellow arc (bottom-left)
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      2.36,
-      1.18,
-      false,
-      Paint()
-        ..color = const Color(0xFFFBBC05)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.18,
-    );
-    // Green arc (bottom-right)
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      1.26,
-      1.05,
-      false,
-      Paint()
-        ..color = const Color(0xFF34A853)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.18,
-    );
-    // Horizontal bar (right side)
-    canvas.drawLine(
-      Offset(cx, cy),
-      Offset(size.width, cy),
-      Paint()
-        ..color = const Color(0xFF4285F4)
-        ..strokeWidth = size.width * 0.18,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
 }
 
 class _ErrorBanner extends StatelessWidget {
