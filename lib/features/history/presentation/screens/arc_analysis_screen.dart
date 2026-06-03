@@ -139,10 +139,19 @@ class _AnalysisBody extends ConsumerWidget {
 
                 insightsAsync.when(
                   loading: () => const _GeneratingCard(),
-                  error: (err, __) => _ErrorCard(
-                    error: err.toString(),
-                    onRetry: () => ref.invalidate(_arcAnalysisInsightsProvider(arcId)),
-                  ),
+                  error: (err, __) {
+                    final msg = err.toString();
+                    if (msg.contains('status=422') ||
+                        msg.contains('Need at least')) {
+                      return _NotEnoughSessionsCard(
+                          sessionCount: arc.sessionCount);
+                    }
+                    return _ErrorCard(
+                      error: msg,
+                      onRetry: () =>
+                          ref.invalidate(_arcAnalysisInsightsProvider(arcId)),
+                    );
+                  },
                   data: (insights) {
                     if (insights.isEmpty) {
                       return _NoInsightsCard(sessionCount: arc.sessionCount);
@@ -225,7 +234,7 @@ class _InsightContent extends StatelessWidget {
         if (howItEvolved.isNotEmpty) ...[
           const SizedBox(height: 20),
           Text(
-            'Across ${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'} over $spanDays days, $howItEvolved',
+            'Across ${arc.sessionCount} ${arc.sessionCount == 1 ? 'session' : 'sessions'} over $spanDays days, ${_asSecondPerson(howItEvolved)}',
             style: GoogleFonts.dmSans(
               fontSize: 15,
               color: Colors.white60,
@@ -241,7 +250,7 @@ class _InsightContent extends StatelessWidget {
           _InsightCard(
             label: 'PATTERN',
             labelColor: color,
-            content: patternNoticed,
+            content: _asSecondPerson(patternNoticed),
             borderColor: color.withOpacity(.3),
             bgColor: color.withOpacity(.06),
           ),
@@ -480,6 +489,53 @@ class _ErrorCard extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _asSecondPerson(String text) => text
+    .replaceAll("The user's", 'Your')
+    .replaceAll("the user's", 'your')
+    .replaceAll('The user', 'You')
+    .replaceAll('the user', 'you');
+
+class _NotEnoughSessionsCard extends StatelessWidget {
+  final int sessionCount;
+
+  const _NotEnoughSessionsCard({required this.sessionCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final needed = (3 - sessionCount).clamp(0, 3);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.hourglass_top_rounded,
+              size: 32, color: Colors.white.withOpacity(.3)),
+          const SizedBox(height: 12),
+          Text(
+            needed > 0
+                ? '$needed more ${needed == 1 ? 'session' : 'sessions'} needed to unlock analysis'
+                : 'Analysis will be ready soon',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+                fontSize: 15, color: Colors.white54, height: 1.5),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Analysis unlocks after 3 sessions in an arc.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+                fontSize: 12, color: Colors.white30, height: 1.4),
           ),
         ],
       ),

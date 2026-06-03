@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../data/providers/arc_providers.dart';
+import '../../../../data/repositories/arc_repository.dart';
 import '../../../../shared/utils/arc_color.dart';
 import '../../data/models/history_arc_model.dart';
 import '../../data/models/history_reflection_model.dart';
@@ -535,6 +537,50 @@ class _ArcsView extends ConsumerStatefulWidget {
 
 class _ArcsViewState extends ConsumerState<_ArcsView> {
   bool _archivedExpanded = false;
+  bool _organizeMode = false;
+
+  Future<void> _confirmDelete(
+      BuildContext context, String arcId, String arcName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2456),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete "$arcName"?',
+          style: GoogleFonts.dmSans(
+              color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'This will permanently delete this arc. Your session reflections '
+          'will remain in the timeline.',
+          style: GoogleFonts.dmSans(
+              color: Colors.white54, fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel',
+                style: GoogleFonts.dmSans(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete',
+                style: GoogleFonts.dmSans(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(arcRepositoryProvider).deleteArc(arcId);
+      ref.invalidate(arcsProvider);
+      ref.invalidate(historyActiveArcsProvider);
+      ref.invalidate(historyArchivedArcsProvider);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -579,30 +625,48 @@ class _ArcsViewState extends ConsumerState<_ArcsView> {
                     ],
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.06),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: Colors.white.withOpacity(.1)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.grid_view_rounded,
-                            size: 14, color: Colors.white54),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Organize',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white54,
-                          ),
+                  GestureDetector(
+                    onTap: () =>
+                        setState(() => _organizeMode = !_organizeMode),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _organizeMode
+                            ? Colors.redAccent.withOpacity(.12)
+                            : Colors.white.withOpacity(.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _organizeMode
+                              ? Colors.redAccent.withOpacity(.3)
+                              : Colors.white.withOpacity(.1),
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _organizeMode
+                                ? Icons.close_rounded
+                                : Icons.grid_view_rounded,
+                            size: 14,
+                            color: _organizeMode
+                                ? Colors.redAccent
+                                : Colors.white54,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _organizeMode ? 'Done' : 'Organize',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: _organizeMode
+                                  ? Colors.redAccent
+                                  : Colors.white54,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -619,7 +683,12 @@ class _ArcsViewState extends ConsumerState<_ArcsView> {
                   childAspectRatio: 0.85,
                 ),
                 itemCount: active.length,
-                itemBuilder: (_, i) => _ArcGridCell(arc: active[i]),
+                itemBuilder: (_, i) => _ArcGridCell(
+                  arc: active[i],
+                  organizeMode: _organizeMode,
+                  onDelete: () => _confirmDelete(
+                      context, active[i].id, active[i].name),
+                ),
               ),
             ],
             if (archived.isNotEmpty) ...[
@@ -679,8 +748,15 @@ class _ArcsViewState extends ConsumerState<_ArcsView> {
 class _ArcGridCell extends StatelessWidget {
   final HistoryArcModel arc;
   final bool muted;
+  final bool organizeMode;
+  final VoidCallback? onDelete;
 
-  const _ArcGridCell({required this.arc, this.muted = false});
+  const _ArcGridCell({
+    required this.arc,
+    this.muted = false,
+    this.organizeMode = false,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -688,8 +764,10 @@ class _ArcGridCell extends StatelessWidget {
     final color = arcColor(arc.id);
 
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.arcDetail}/${arc.id}'),
-      child: Container(
+      onTap: organizeMode ? null : () => context.push('${AppRoutes.arcDetail}/${arc.id}'),
+      child: Stack(
+        children: [
+          Container(
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(.04),
           borderRadius: BorderRadius.circular(20),
@@ -745,6 +823,26 @@ class _ArcGridCell extends StatelessWidget {
             ),
           ],
         ),
+      ),
+          if (organizeMode)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: onDelete,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade700,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      size: 16, color: Colors.white),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

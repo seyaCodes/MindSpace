@@ -42,6 +42,12 @@ class SessionDetailScreen extends ConsumerWidget {
   }
 }
 
+String _asSecondPerson(String text) => text
+    .replaceAll("The user's", 'Your')
+    .replaceAll("the user's", 'your')
+    .replaceAll('The user', 'You')
+    .replaceAll('the user', 'you');
+
 class _SessionDetailBody extends StatelessWidget {
   final ReflectionModel session;
 
@@ -89,7 +95,7 @@ class _SessionDetailBody extends StatelessWidget {
             _SectionLabel('WHAT SAGE HEARD'),
             const SizedBox(height: 8),
             Text(
-              session.whatSageHeard,
+              _asSecondPerson(session.whatSageHeard),
               style: GoogleFonts.dmSans(
                 fontSize: 15,
                 color: Colors.white70,
@@ -111,7 +117,7 @@ class _SessionDetailBody extends StatelessWidget {
                 ),
               ),
               child: Text(
-                session.sharedPerspective!,
+                _asSecondPerson(session.sharedPerspective!),
                 style: GoogleFonts.dmSans(
                   fontSize: 15,
                   color: Colors.white70,

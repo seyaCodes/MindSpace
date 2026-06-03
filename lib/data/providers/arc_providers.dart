@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/arc_repository.dart';
 
-final arcsProvider = FutureProvider<List<ArcModel>>((ref) async {
+final arcsProvider = FutureProvider.autoDispose<List<ArcModel>>((ref) async {
   return ref.read(arcRepositoryProvider).getArcs();
 });
 
